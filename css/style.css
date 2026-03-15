@@ -1,0 +1,394 @@
+/* =========================================================================
+   DISCBOXD - DESIGN SYSTEM
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-color: #F5F5F7;
+  --card-bg: #FFFFFF;
+  --text-primary: #1D1D1F;
+  --text-secondary: #86868B;
+  --accent: #0071E3;
+  --accent-hover: #0077ED;
+  --border-color: #E5E5EA;
+  --danger: #FF3B30;
+}
+
+html, body {
+  width: 100%;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar - Apple Style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Animações Base */
+.fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================================
+   UTILITÁRIOS & COMPONENTES
+   ========================================================================= */
+
+/* Componentes Apple-style (Glassmorphism) */
+.apple-card {
+  background-color: var(--card-bg);
+  border-radius: 1.5rem; /* rounded-3xl */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); /* sombra sutil */
+  border: 1px solid rgba(255, 255, 255, 0.5); /* efeito de vidro na borda */
+}
+
+/* Inputs Premium */
+.apple-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem; /* rounded-xl */
+  font-size: 1rem;
+  color: var(--text-primary);
+  transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.apple-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15);
+  background-color: #FFFFFF;
+}
+
+/* Botões e Inputs */
+.apple-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.5rem;
+  background-color: var(--accent);
+  color: white;
+  font-weight: 500;
+  border-radius: 2rem; /* formato de pílula totalmente arredondado */
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.apple-btn:hover {
+  background-color: var(--accent-hover);
+  transform: scale(0.98);
+}
+
+.apple-btn:disabled {
+  background-color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.apple-btn-secondary {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.apple-btn-secondary:hover {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+/* =========================================================================
+   SKELETON LOADERS & STATE CLASSES
+   ========================================================================= */
+
+.skeleton {
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Visibilidade de Telas (para o SPA Vanilla) */
+.hidden {
+  display: none;
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Orbes de Fundo (Blur) */
+.bg-orb-1 {
+  position: absolute;
+  top: -10%;
+  left: -5%;
+  width: 45vw;
+  height: 45vw;
+  background: radial-gradient(circle, rgba(0,113,227,0.12) 0%, rgba(0,113,227,0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+.bg-orb-2 {
+  position: absolute;
+  bottom: -5%;
+  right: -10%;
+  width: 55vw;
+  height: 55vw;
+  background: radial-gradient(circle, rgba(134,134,139,0.08) 0%, rgba(134,134,139,0) 70%);
+  border-radius: 50%;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Barra de Rolagem Customizada */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Utilitário para esconder a barra de rolagem */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Responsividade e Profundidade do Modal */
+#album-detail-modal {
+  transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#album-detail-modal .apple-card {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+}
+
+/* Ajustes para Header Fixo */
+.sticky {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+  will-change: transform;
+}
+
+/* Responsividade e Profundidade do Modal */
+#album-detail-modal {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#album-detail-modal .apple-card {
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.45);
+}
+
+/* Garante que o conteúdo abaixo do cabeçalho flutuante tenha espaço suficiente */
+#dashboard-content {
+  scroll-margin-top: 160px;
+  padding-top: 2rem;
+}
+
+/* Estilo de Mock Social */
+.cursor-not-allowed::placeholder {
+  color: #86868B;
+  opacity: 0.5;
+}
+
+/* Estilos para Atividade de Amigos */
+#friends-activity-mobile .apple-card,
+#friends-activity-sidebar .apple-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#friends-activity-mobile .apple-card:hover,
+#friends-activity-sidebar .apple-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+#friends-activity-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* Correção específica para modal horizontal em MD+ */
+@media (min-width: 768px) {
+  #album-detail-modal .apple-card {
+    height: 80vh;
+    max-height: 650px;
+    min-height: 480px;
+  }
+}
+
+/* Ajustes de Responsividade */
+#dashboard-content {
+  margin-top: 150px; /* Reduzido para aproximar a coleção da ilha unificada */
+  padding: 0 1rem;
+}
+
+@media (max-width: 767px) {
+  #dashboard-content {
+    margin-top: 210px; /* Ajustado para o stack do mobile */
+  }
+}
+
+#main-header-island .apple-input {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+#main-header-island label {
+  font-size: 8px;
+  margin-bottom: 2px;
+}
+@media (max-width: 767px) {
+  #album-detail-modal .apple-card {
+    max-height: 92vh;
+    width: calc(100% - 1.5rem);
+    height: 92vh;
+    overflow: hidden !important; /* Move o scroll para a div interna */
+    display: flex;
+    flex-direction: column;
+    border-radius: 1.5rem;
+    position: relative;
+  }
+
+  /* Proporção fixa para a capa no mobile */
+  #album-detail-modal .relative.aspect-square.md\:aspect-auto {
+    height: 45vh;
+    flex-shrink: 0;
+  }
+
+  #album-detail-modal .relative.aspect-square.md\:aspect-auto img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  /* Scroll interno para info/faixas */
+  #album-detail-modal .p-6.md\:p-8 {
+    flex: 1;
+    overflow-y: auto !important;
+    padding: 1.25rem !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Garante que o botão de fechar fique no topo */
+  #btn-close-album-detail {
+    z-index: 50;
+    background: rgba(0,0,0,0.5) !important;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  #album-detail-modal .grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Remove divisória lateral no mobile */
+  #album-detail-modal .border-r {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  /* Ajuste de padding para info principal */
+  #album-detail-modal .p-6.md\:p-8 {
+    padding: 1.25rem !important;
+  }
+
+  /* Overlay da Barra de Ações Compacta */
+  #album-detail-actions {
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+  }
+
+  #album-detail-actions .apple-btn, 
+  #album-detail-actions .apple-btn-secondary {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Scroll Interno do Modal - Descontinuado em favor do scroll único no pai */
+#album-detail-tracks {
+  padding-right: 4px;
+}
+
+@media (min-width: 768px) {
+  #album-detail-tracks {
+    max-height: none;
+    overflow-y: visible !important;
+  }
+}
+
+/* Button Consistency */
+#album-detail-modal .apple-btn,
+#album-detail-modal .apple-btn-secondary {
+  border-radius: 1rem !important; /* rounded-2xl style consistent */
+}

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Discboxd | Sua coleção de música premium</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💿</text></svg>">
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./css/style.css" />
+
+  <!-- Intercepta o código do Spotify antes da inicialização do Supabase -->
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var code = params.get('code');
+      var state = params.get('state');
+      if (code && state === 'spotify_auth') {
+        sessionStorage.setItem('spotify_pending_code', code);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    })();
+  </script>
+  <script type="module" src="./js/app.js" defer></script>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col items-center p-4 md:p-8 relative">
+
+  <!-- Elementos Decorativos de Fundo (Clipped para evitar transbordamento) -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="bg-orb-1"></div>
+    <div class="bg-orb-2"></div>
+  </div>
+
+  <main id="landing-view" class="w-full max-w-5xl text-center fade-in flex flex-col items-center mt-4 md:mt-12 relative z-10 min-h-[80vh] justify-center">
+    <div class="mb-6">
+      <span
+        class="px-4 py-1.5 text-xs font-bold tracking-widest text-[#1DB954] uppercase bg-[#1DB954]/10 border border-[#1DB954]/20 rounded-full backdrop-blur-sm shadow-sm inline-flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+          <path
+            d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+        </svg>
+        Sua Coleção Musical
+      </span>
+    </div>
+    <h1
+      class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1] text-transparent bg-clip-text bg-gradient-to-r from-gray-900 via-gray-700 to-black drop-shadow-sm p-2">
+      A trilha sonora da sua vida,<br />em um só lugar.
+    </h1>
+    <p class="text-lg md:text-xl text-[var(--text-secondary)] mb-10 max-w-2xl mx-auto font-medium leading-relaxed">
+      Adentre ao paraíso dos colecionadores. Armazene seu acervo, troque avaliações de álbuns e exiba as descobertas que
+      não saem do seu <i>repeat</i>.
+    </p>
+    <button id="btn-get-started"
+      class="apple-btn text-lg px-10 py-4 w-auto shadow-xl hover:shadow-2xl transition-all hover:-translate-y-1 bg-gradient-to-r from-[var(--accent)] to-blue-600 border border-blue-400/30">
+      Acessar Discboxd
+    </button>
+
+
+
+    <div class="mt-10 w-full relative group px-4 pb-8" style="perspective: 1000px;">
+      <div
+        class="relative w-full max-w-4xl mx-auto rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/40 overflow-hidden transform transition-transform duration-700 ease-out group-hover:scale-[1.01] bg-[var(--bg-color)]"
+        style="transform: rotateX(8deg); transform-style: preserve-3d;">
+        <img src="./hero_bg.png" alt="Vinyl Music Display"
+          class="w-full object-cover h-[200px] md:h-[320px] opacity-95 block relative z-0">
+        <div
+          class="absolute inset-x-0 bottom-0 h-32 md:h-48 bg-gradient-to-t from-[var(--bg-color)] to-transparent z-10 pointer-events-none">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="login-view" class="w-full max-w-md fade-in min-h-[80vh] flex flex-col justify-center" style="display: none;">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-bold tracking-tight text-[var(--text-primary)]">Discboxd.</h1>
+      <p class="text-[var(--text-secondary)] mt-2">Sua vida sonora, catalogada.</p>
+    </div>
+
+    <div class="apple-card p-8 backdrop-blur-md bg-white/80">
+      <div id="auth-error-msg" class="hidden text-sm text-[var(--danger)] bg-red-50 p-3 rounded-xl mb-4 text-center">
+      </div>
+
+      <form id="login-form" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="login-email">Email</label>
+          <input type="email" id="login-email" class="apple-input" placeholder="seu@email.com" required />
+        </div>
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-sm font-medium text-[var(--text-secondary)]" for="login-password">Senha</label>
+          </div>
+          <input type="password" id="login-password" class="apple-input" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" id="btn-login" class="apple-btn mt-6">Entrar</button>
+
+        <p class="text-center text-sm text-[var(--text-secondary)] mt-6">
+          Ainda não tem conta? <a href="#" id="toggle-register"
+            class="text-[var(--accent)] hover:underline font-medium">Criar Agora</a>
+        </p>
+
+        <div class="relative my-8">
+          <div class="absolute inset-0 flex items-center">
+            <span class="w-full border-t border-gray-100"></span>
+          </div>
+          <div class="relative flex justify-center text-xs uppercase">
+            <span class="bg-white px-4 text-gray-400 font-bold tracking-widest">ou</span>
+          </div>
+        </div>
+
+        <button type="button" id="btn-login-spotify-modal"
+          class="flex items-center justify-center gap-3 w-full px-6 py-3 text-sm font-bold text-white bg-[#1DB954] hover:bg-[#1ed760] rounded-xl transition-all shadow-md">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+          Continuar com Spotify
+        </button>
+      </form>
+
+      <form id="register-form" class="space-y-5 hidden">
+        <div>
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="register-name">Seu
+            Nome</label>
+          <input type="text" id="register-name" class="apple-input" placeholder="Como quer ser chamado?" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="register-username">Nome de
+            Usuário (@)</label>
+          <div class="relative">
+            <span
+              class="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--text-secondary)] font-medium">@</span>
+            <input type="text" id="register-username" class="apple-input pl-8" placeholder="usuario"
+              pattern="^[a-zA-Z0-9_]{3,20}$" title="Apenas letras sem acento, números ou sublinhado." required />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="register-email">Email</label>
+          <input type="email" id="register-email" class="apple-input" placeholder="seu@email.com" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1"
+            for="register-password">Senha</label>
+          <input type="password" id="register-password" class="apple-input" placeholder="Mínimo de 6 caracteres"
+            minlength="6" required />
+        </div>
+
+        <button type="submit" id="btn-register" class="apple-btn mt-6">Criar Conta</button>
+
+        <p class="text-center text-sm text-[var(--text-secondary)] mt-6">
+          Já tem uma conta? <a href="#" id="toggle-login" class="text-[var(--accent)] hover:underline font-medium">Fazer
+            Login</a>
+        </p>
+      </form>
+    </div>
+  </main>
+  <main id="dashboard-view" class="w-full max-w-7xl mx-auto fade-in min-h-full" style="display: none;">
+    <!-- Floating Island Header -->
+    <div id="main-header-island"
+      class="sticky top-2 md:top-4 z-40 mx-auto w-full max-w-7xl px-2 md:px-4 transition-transform duration-500">
+      <div
+        class="bg-white/95 backdrop-blur-2xl shadow-xl shadow-black/5 rounded-[1.5rem] md:rounded-[2rem] border border-white/40 p-4 md:p-6 transition-all duration-300">
+
+        <header class="flex justify-between items-center mb-4">
+          <div class="flex flex-col min-w-0">
+            <h1 id="header-logo" class="text-base md:text-2xl font-bold tracking-tight text-[#1D1D1F] truncate text-ellipsis overflow-hidden cursor-pointer hover:opacity-70 transition-opacity" title="Voltar ao topo">Discboxd.</h1>
+            <p
+              class="text-[8px] md:text-xs text-[var(--text-secondary)] font-medium uppercase tracking-widest opacity-70 truncate">
+              Sua Coleção Premium</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="btn-profile-toggle"
+              class="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity text-left bg-gray-50/50 p-1 md:pr-3 rounded-full border border-gray-100/50">
+              <img id="header-avatar" class="h-7 w-7 md:h-9 md:h-9 rounded-full object-cover bg-gray-100 shadow-sm"
+                src="https://ui-avatars.com/api/?name=User&background=F5F5F7&color=1D1D1F" alt="Avatar">
+              <div class="hidden sm:block leading-tight">
+                <span id="header-user-name" class="font-semibold text-xs block">Perfil</span>
+                <span id="header-user-handle" class="text-[9px] text-[var(--text-secondary)] block">@user</span>
+              </div>
+            </button>
+            <button id="btn-logout"
+              class="apple-btn-secondary px-3 py-2 rounded-full text-xs font-semibold transition-all hover:bg-red-50 hover:text-red-500 hover:border-red-100">Sair</button>
+          </div>
+        </header>
+
+        <!-- Listening Now (Ultra Compact) -->
+        <div id="listening-now" class="hidden mb-4">
+          <div class="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[#1DB954]/5 border border-[#1DB954]/10">
+            <div class="relative">
+              <img id="listening-now-cover" src="" alt="" class="h-6 w-6 rounded-md object-cover">
+              <span
+                class="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 bg-[#1DB954] rounded-full border border-white animate-pulse"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[8px] text-[#1DB954] font-black uppercase tracking-tighter leading-none mb-0.5">Ouvindo
+                Agora</p>
+              <p class="text-[11px] font-semibold truncate leading-none text-[#1D1D1F]" id="listening-now-track"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barras de Operação (Grids) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-1.5 md:gap-3">
+          <!-- Busca Global Spotify -->
+          <div class="relative group">
+            <label class="block text-[9px] font-bold text-[#1DB954]/70 tracking-widest uppercase mb-1 ml-2">Spotify Global</label>
+            <div class="relative">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 group-focus-within:text-[#1DB954] transition-colors"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input type="text" id="search-input"
+                class="apple-input pl-9 pr-3 py-2 text-xs bg-gray-50/50 border-gray-100/50 rounded-xl focus:bg-white focus:border-[#1DB954]/30 transition-all"
+                placeholder="Buscar álbuns..." autocomplete="off" />
+            </div>
+          </div>
+
+          <!-- Busca Local Coleção -->
+          <div class="relative group">
+            <label class="block text-[9px] font-bold text-[var(--accent)] tracking-widest uppercase mb-1 ml-2">Minha Coleção</label>
+            <div class="relative">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 group-focus-within:text-[var(--accent)] transition-colors"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input type="text" id="collection-search"
+                class="apple-input pl-9 pr-3 py-2 text-xs bg-gray-50/50 border-gray-100/50 rounded-xl focus:bg-white transition-all w-full"
+                placeholder="Filtrar coleção..." />
+            </div>
+          </div>
+
+          <!-- Controles de Exibição -->
+          <div class="flex items-end gap-2">
+            <div class="flex-1 relative">
+              <select id="collection-sort"
+                class="apple-input py-2 px-3 pr-7 text-[10px] bg-gray-50/50 border-gray-100/50 rounded-xl cursor-pointer w-full appearance-none transition-all focus:bg-white"
+                title="Ordenar">
+                <option value="recent">⇅ Recentes</option>
+                <option value="title">⇅ Título</option>
+                <option value="artist">⇅ Artista</option>
+                <option value="year">⇅ Ano</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-gray-400">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+            <div class="flex-1 relative">
+              <select id="collection-group"
+                class="apple-input py-2 px-3 pr-7 text-[10px] bg-gray-50/50 border-gray-100/50 rounded-xl cursor-pointer w-full appearance-none transition-all focus:bg-white"
+                title="Agrupar">
+                <option value="none">Lista</option>
+                <option value="artist">Artista</option>
+                <option value="year">Ano</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-gray-400">
+                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+<SAME_LINE>
+    <div id="dashboard-content" class="fade-in">
+      <div class="flex flex-col lg:flex-row gap-6">
+
+      <!-- Conteúdo Principal (Esquerda) -->
+      <div class="flex-1 min-w-0 space-y-10">
+
+      <!-- Discboxers Activity — Mobile Only (horizontal scroll) -->
+      <section id="friends-activity-mobile" class="lg:hidden px-4">
+        <div class="flex items-center justify-between mb-4 px-2">
+          <h3 class="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Atividade de Discboxers
+          </h3>
+          <span class="text-[10px] text-[var(--accent)] font-semibold hover:underline cursor-pointer">Ver Todos</span>
+        </div>
+        <div class="flex gap-4 overflow-x-auto pb-4 custom-scrollbar no-scrollbar scroll-smooth">
+          <!-- Amigo 1 -->
+          <div
+            class="friend-activity-card flex-none w-64 apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+            data-album-query="SOS SZA">
+            <div class="relative">
+              <img src="https://ui-avatars.com/api/?name=Rafael+Silva&background=E5E5EA&color=1D1D1F"
+                class="h-10 w-10 rounded-full object-cover shadow-sm" alt="Rafael">
+              <span class="absolute bottom-0 right-0 h-3 w-3 bg-[#1DB954] border-2 border-white rounded-full"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-[#1D1D1F] truncate leading-tight">Rafael Silva</p>
+              <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                  class="text-[var(--accent)] font-medium">SOS - SZA</span></p>
+            </div>
+          </div>
+          <!-- Amigo 2 -->
+          <div
+            class="friend-activity-card flex-none w-64 apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+            data-album-query="Midnights Taylor Swift">
+            <div class="relative">
+              <img src="https://ui-avatars.com/api/?name=Carla+Oliveira&background=E5E5EA&color=1D1D1F"
+                class="h-10 w-10 rounded-full object-cover shadow-sm" alt="Carla">
+              <span class="absolute bottom-0 right-0 h-3 w-3 bg-[#1DB954] border-2 border-white rounded-full"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-[#1D1D1F] truncate leading-tight">Carla Oliveira</p>
+              <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                  class="text-[var(--accent)] font-medium">Midnights - Taylor Swift</span></p>
+            </div>
+          </div>
+          <!-- Amigo 3 -->
+          <div
+            class="friend-activity-card flex-none w-64 apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+            data-album-query="AM Arctic Monkeys">
+            <div class="relative">
+              <img src="https://ui-avatars.com/api/?name=Lucas+Mendes&background=E5E5EA&color=1D1D1F"
+                class="h-10 w-10 rounded-full object-cover shadow-sm" alt="Lucas">
+              <span class="absolute bottom-0 right-0 h-3 w-3 bg-gray-300 border-2 border-white rounded-full"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-[#1D1D1F] truncate leading-tight">Lucas Mendes</p>
+              <p class="text-[10px] text-[var(--text-secondary)] truncate">Último: <span
+                  class="text-gray-400 font-medium">AM - Arctic Monkeys</span></p>
+            </div>
+          </div>
+          <!-- Amigo 4 -->
+          <div
+            class="friend-activity-card flex-none w-64 apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+            data-album-query="Blonde Frank Ocean">
+            <div class="relative">
+              <img src="https://ui-avatars.com/api/?name=Bia+Santos&background=E5E5EA&color=1D1D1F"
+                class="h-10 w-10 rounded-full object-cover shadow-sm" alt="Bia">
+              <span class="absolute bottom-0 right-0 h-3 w-3 bg-[#1DB954] border-2 border-white rounded-full"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-[#1D1D1F] truncate leading-tight">Bia Santos</p>
+              <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                  class="text-[var(--accent)] font-medium">Blonde - Frank Ocean</span></p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Painel de Resultados da Busca (oculto por padrão) -->
+      <div id="search-results-panel" class="hidden px-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-bold">Resultados da Busca</h3>
+          <button id="btn-close-search"
+            class="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium">Fechar</button>
+        </div>
+        <div id="search-results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <!-- Cards preenchidos via JS -->
+        </div>
+        <div id="search-loading" class="hidden text-center py-8">
+          <div class="inline-block h-8 w-8 border-4 border-blue-200 border-t-[var(--accent)] rounded-full animate-spin">
+          </div>
+          <p class="text-sm text-[var(--text-secondary)] mt-3">Buscando no Spotify...</p>
+        </div>
+        <div id="search-no-results" class="hidden text-center py-8">
+          <p class="text-[var(--text-secondary)]">Nenhum álbum encontrado para esta busca.</p>
+        </div>
+      </div>
+
+        <div class="mx-auto w-full px-4 mb-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-xl md:text-2xl font-bold text-[#1D1D1F] flex items-center gap-2">
+                Minha Coleção 
+                <span id="collection-count" class="text-sm font-normal text-[var(--text-secondary)] bg-white/50 px-2 py-0.5 rounded-full shadow-sm"></span>
+              </h2>
+            </div>
+        </div>
+        <div id="collection-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <!-- Cards preenchidos via JS -->
+        </div>
+
+        <!-- Estado Vazio -->
+        <div id="collection-empty"
+          class="apple-card p-8 md:p-12 text-center backdrop-blur-md bg-white/80 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent pointer-events-none"></div>
+          <div
+            class="w-16 h-16 bg-blue-100 text-[var(--accent)] rounded-full flex items-center justify-center mb-6 mx-auto relative z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold mb-3 relative z-10">Sua coleção está vazia</h2>
+          <p class="text-[var(--text-secondary)] max-w-md mx-auto mb-6 relative z-10">
+            Conecte-se ao Spotify e comece a buscar os álbuns que marcaram sua vida.
+          </p>
+        </div>
+      </section>
+
+      </div> <!-- /Conteúdo Principal -->
+
+      <!-- Sidebar Direita — Desktop Only (vertical, sticky) -->
+      <aside id="friends-activity-sidebar" class="hidden lg:block w-[280px] flex-shrink-0">
+        <div class="sticky top-[280px]">
+          <div class="flex items-center justify-between mb-4 px-1">
+            <h3 class="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Atividade</h3>
+            <span class="text-[10px] text-[var(--accent)] font-semibold hover:underline cursor-pointer">Ver Todos</span>
+          </div>
+          <div class="space-y-3 max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar pr-1">
+            <!-- Amigo 1 -->
+            <div
+              class="friend-activity-card apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+              data-album-query="SOS SZA">
+              <div class="relative">
+                <img src="https://ui-avatars.com/api/?name=Rafael+Silva&background=E5E5EA&color=1D1D1F"
+                  class="h-9 w-9 rounded-full object-cover shadow-sm" alt="Rafael">
+                <span class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-[#1DB954] border-2 border-white rounded-full"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold text-[#1D1D1F] truncate leading-tight">Rafael Silva</p>
+                <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                    class="text-[var(--accent)] font-medium">SOS - SZA</span></p>
+              </div>
+            </div>
+            <!-- Amigo 2 -->
+            <div
+              class="friend-activity-card apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+              data-album-query="Midnights Taylor Swift">
+              <div class="relative">
+                <img src="https://ui-avatars.com/api/?name=Carla+Oliveira&background=E5E5EA&color=1D1D1F"
+                  class="h-9 w-9 rounded-full object-cover shadow-sm" alt="Carla">
+                <span class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-[#1DB954] border-2 border-white rounded-full"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold text-[#1D1D1F] truncate leading-tight">Carla Oliveira</p>
+                <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                    class="text-[var(--accent)] font-medium">Midnights - Taylor Swift</span></p>
+              </div>
+            </div>
+            <!-- Amigo 3 -->
+            <div
+              class="friend-activity-card apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+              data-album-query="AM Arctic Monkeys">
+              <div class="relative">
+                <img src="https://ui-avatars.com/api/?name=Lucas+Mendes&background=E5E5EA&color=1D1D1F"
+                  class="h-9 w-9 rounded-full object-cover shadow-sm" alt="Lucas">
+                <span class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-gray-300 border-2 border-white rounded-full"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold text-[#1D1D1F] truncate leading-tight">Lucas Mendes</p>
+                <p class="text-[10px] text-[var(--text-secondary)] truncate">Último: <span
+                    class="text-gray-400 font-medium">AM - Arctic Monkeys</span></p>
+              </div>
+            </div>
+            <!-- Amigo 4 -->
+            <div
+              class="friend-activity-card apple-card p-3 bg-white/60 backdrop-blur-md border border-white/40 flex items-center gap-3 group cursor-pointer hover:bg-white transition-all"
+              data-album-query="Blonde Frank Ocean">
+              <div class="relative">
+                <img src="https://ui-avatars.com/api/?name=Bia+Santos&background=E5E5EA&color=1D1D1F"
+                  class="h-9 w-9 rounded-full object-cover shadow-sm" alt="Bia">
+                <span class="absolute bottom-0 right-0 h-2.5 w-2.5 bg-[#1DB954] border-2 border-white rounded-full"></span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-[11px] font-bold text-[#1D1D1F] truncate leading-tight">Bia Santos</p>
+                <p class="text-[10px] text-[var(--text-secondary)] truncate">Ouvindo: <span
+                    class="text-[var(--accent)] font-medium">Blonde - Frank Ocean</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      </div> <!-- /flex row -->
+    </div>
+
+    <div id="profile-settings" class="hidden apple-card p-8 max-w-2xl mx-auto w-full mb-8 backdrop-blur-md bg-white/80">
+      <h3 class="text-2xl font-bold mb-6">Configurações de Perfil</h3>
+      <form id="profile-form" class="space-y-6">
+        <div id="profile-success-msg" class="hidden text-sm text-green-700 bg-green-50 p-3 rounded-xl mb-4 text-center">
+        </div>
+        <div id="profile-error-msg"
+          class="hidden text-sm text-[var(--danger)] bg-red-50 p-3 rounded-xl mb-4 text-center"></div>
+
+        <div class="flex items-center gap-6 mb-6">
+          <div class="relative group cursor-pointer" id="avatar-upload-container">
+            <img id="profile-avatar-preview"
+              class="h-20 w-20 rounded-full object-cover bg-gray-200 transition-opacity group-hover:opacity-60"
+              src="https://ui-avatars.com/api/?name=User" alt="Avatar Preview">
+            <div
+              class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded-full">
+              <span class="text-white text-xs font-semibold">Editar</span>
+            </div>
+            <input type="file" id="profile-avatar-file" accept="image/*" class="hidden" />
+          </div>
+          <div class="flex-1 text-left">
+            <h4 class="text-lg font-medium text-[var(--text-primary)]">Sua Foto de Perfil</h4>
+            <p class="text-sm text-[var(--text-secondary)]">Clique na imagem para enviar do seu computador.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+          <div>
+            <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="profile-name">Nome de
+              Exibição</label>
+            <input type="text" id="profile-name" class="apple-input" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="profile-username">Nome de
+              Usuário</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">@</span>
+              <input type="text" id="profile-username"
+                class="apple-input pl-8 bg-gray-50 text-gray-500 cursor-not-allowed" disabled />
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-[var(--border-color)] text-left">
+          <div class="flex justify-between items-center mb-3">
+            <h4 class="text-lg font-medium">Spotify</h4>
+            <span id="spotify-status-badge"
+              class="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-500">Desconectado</span>
+          </div>
+          <p class="text-sm text-[var(--text-secondary)] mb-3">Conecte sua conta do Spotify para buscar e adicionar
+            álbuns à sua coleção.</p>
+          <button type="button" id="btn-spotify-profile"
+            class="apple-btn w-auto px-6 py-2 text-sm bg-[#1DB954] hover:bg-[#1ed760] border-none gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+            </svg>
+            Conectar Spotify
+          </button>
+        </div>
+
+        <div class="pt-4 border-t border-[var(--border-color)] text-left">
+          <div class="flex justify-between items-center mb-4">
+            <h4 class="text-lg font-medium">Segurança</h4>
+            <button type="button" id="btn-toggle-password"
+              class="text-sm font-medium text-[var(--accent)] hover:underline">Alterar Senha</button>
+          </div>
+
+          <div id="password-edit-container" class="hidden">
+            <label class="block text-sm font-medium text-[var(--text-secondary)] mb-1" for="profile-new-password">Nova
+              Senha</label>
+            <input type="password" id="profile-new-password" class="apple-input mb-2"
+              placeholder="Digite sua nova senha" minlength="6" />
+            <p class="text-xs text-[var(--text-secondary)]">Sua sessão atual não será desconectada e você precisará
+              logar com a nova senha na próxima visita.</p>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" id="btn-cancel-profile"
+            class="apple-btn-secondary px-6 py-2 rounded-xl text-sm font-medium transition-colors">Cancelar</button>
+          <button type="submit" id="btn-save-profile" class="apple-btn w-auto px-8">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Spotify Connect Popup (primeira vez) -->
+  <div id="spotify-connect-overlay"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="apple-card p-8 max-w-md w-full text-center bg-white shadow-2xl">
+      <div class="w-16 h-16 bg-[#1DB954]/10 text-[#1DB954] rounded-full flex items-center justify-center mb-6 mx-auto">
+        <svg class="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+        </svg>
+      </div>
+      <h3 class="text-2xl font-bold mb-2">Conecte o Spotify</h3>
+      <p class="text-[var(--text-secondary)] mb-6">Para começar a montar seu acervo, conecte sua conta do Spotify. Você
+        poderá buscar qualquer álbum existente na plataforma.</p>
+      <button id="btn-connect-spotify-popup"
+        class="apple-btn w-full py-3 bg-[#1DB954] hover:bg-[#1ed760] border-none text-base gap-2">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+          <path
+            d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+        </svg>
+        Conectar com Spotify
+      </button>
+      <button id="btn-skip-spotify"
+        class="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] mt-4 block mx-auto">Agora
+        não</button>
+    </div>
+  </div>
+
+  </main>
+
+  <!-- Album Detail Modal -->
+  <div id="album-detail-modal"
+    class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="apple-card max-w-5xl w-full bg-white shadow-2xl overflow-hidden grid grid-cols-1 md:grid-cols-[40%_60%] h-auto md:h-[85vh] max-h-[700px]">
+
+      <!-- Lado Esquerdo: Capa e Botões de Ação -->
+      <div class="relative bg-gray-50 flex flex-col border-r border-gray-100 md:h-full overflow-y-auto custom-scrollbar">
+        <div class="relative aspect-square">
+          <img id="album-detail-cover" src="" alt="" class="w-full h-full object-cover">
+          <button id="btn-close-album-detail"
+            class="absolute top-4 right-4 h-10 w-10 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-all z-10 md:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <div id="album-detail-actions" class="absolute bottom-0 inset-x-0 p-3 pt-12 flex flex-row md:flex-col items-center justify-center md:items-stretch gap-2 md:gap-3 md:relative md:p-8 md:bg-white md:bg-none bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10 transition-all duration-300">
+          <button id="btn-album-detail-add" title="Adicionar à Coleção"
+            class="apple-btn flex-1 md:flex-none py-2.5 md:py-3 text-sm gap-2 !rounded-xl shadow-sm border border-white/20 backdrop-blur-md bg-white/10 md:bg-[var(--accent)] md:border-none md:backdrop-blur-none transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span class="hidden md:inline">Adicionar à Coleção</span>
+          </button>
+          <button id="btn-album-detail-remove" title="Remover da Coleção"
+            class="hidden apple-btn flex-1 md:flex-none py-2.5 md:py-3 text-sm gap-2 bg-red-500/80 md:bg-red-500 hover:bg-red-600 border-white/10 backdrop-blur-md !rounded-xl shadow-sm md:border-red-500 md:backdrop-blur-none transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 md:h-4 md:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span class="hidden md:inline">Remover da Coleção</span>
+          </button>
+          <a id="btn-album-detail-spotify" href="#" target="_blank" rel="noopener noreferrer" title="Ver no Spotify"
+            class="apple-btn-secondary flex-1 md:flex-none flex items-center justify-center gap-2 px-4 md:px-6 py-2.5 md:py-3 text-sm !rounded-xl font-semibold transition-all backdrop-blur-md bg-white/10 text-white border-white/20 md:bg-transparent md:text-[var(--text-secondary)] md:border-[var(--border-color)] md:backdrop-blur-none hover:bg-[#1DB954] hover:text-white hover:border-[#1DB954]">
+            <svg class="h-5 w-5 md:h-4 md:w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+            </svg>
+            <span class="hidden md:inline">Spotify</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Lado Direito: Info e Músicas (Scroll Único) -->
+      <div class="flex flex-col p-6 md:p-10 overflow-y-auto custom-scrollbar relative bg-white md:h-full">
+        <button id="btn-close-album-detail-desktop"
+          class="hidden md:flex absolute top-6 right-6 h-10 w-10 bg-gray-50 hover:bg-gray-100 text-gray-400 rounded-full items-center justify-center transition-all z-20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd"
+              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+              clip-rule="evenodd" />
+          </svg>
+        </button>
+
+        <div id="album-detail-content" class="space-y-8">
+          <!-- Info Principal -->
+          <div class="border-b border-gray-50 pb-8">
+            <h3 id="album-detail-title" class="text-3xl md:text-4xl font-bold mb-2 leading-tight tracking-tight text-[var(--text-primary)]"></h3>
+            <p id="album-detail-artist" class="text-xl md:text-2xl text-[var(--text-secondary)] font-medium mb-4"></p>
+            
+            <div class="flex items-center gap-4">
+              <span id="album-detail-year" class="text-sm font-semibold text-gray-400"></span>
+              <div id="album-popularity-container" class="hidden flex items-center gap-1.5 text-[11px] font-bold text-[#1DB954] bg-[#1DB954]/10 px-3 py-1.5 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                </svg>
+                <span id="album-detail-popularity"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Músicas -->
+          <div>
+            <div class="flex items-center justify-between mb-5">
+              <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-widest">Lista de Músicas</h4>
+              <span id="album-detail-total-tracks"
+                class="text-[10px] font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full"></span>
+            </div>
+            <div id="album-detail-tracks" class="space-y-0.5">
+              <!-- Músicas -->
+            </div>
+          </div>
+
+          <div id="album-detail-footer"
+            class="pt-8 border-t border-gray-100 text-[10px] text-gray-400 leading-relaxed font-medium">
+            <p id="album-detail-label" class="uppercase tracking-tighter"></p>
+            <p id="album-detail-copyright" class="mt-2 text-[9px] opacity-70"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+# Documentos de Planejamento (Local)
+docs/
+roadmap_acs.md
+roteiro_video.md
+
+# Logs e Cache
+.DS_Store
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Configurações de Ambiente (Se houver)
+.env
+.env.local
