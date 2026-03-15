@@ -283,13 +283,13 @@ body {
 
 /* Ajustes de Responsividade */
 #dashboard-content {
-  margin-top: 150px; /* Reduzido para aproximar a coleção da ilha unificada */
+  margin-top: 50px; /* Reduzido para aproximar a coleção da ilha unificada */
   padding: 0 1rem;
 }
 
 @media (max-width: 767px) {
   #dashboard-content {
-    margin-top: 210px; /* Ajustado para o stack do mobile */
+    margin-top: 50px; /* Ajustado para o stack do mobile */
   }
 }
 
