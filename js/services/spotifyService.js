@@ -5,6 +5,10 @@ import { spotifyAuth } from './spotifyAuth.js';
 
 const API_BASE = 'https://api.spotify.com/v1';
 
+// Caches de memória para mitigar Rate Limits (Erro 429)
+const albumDetailsCache = new Map();
+const artistGenresCache = new Map();
+
 export const spotifyService = {
 
   async searchAlbums(query) {
@@ -56,6 +60,10 @@ export const spotifyService = {
   },
 
   async getAlbumDetails(spotifyId) {
+    if (albumDetailsCache.has(spotifyId)) {
+      return albumDetailsCache.get(spotifyId);
+    }
+
     const token = await spotifyAuth.getValidToken();
     if (!token) return null;
 
@@ -98,6 +106,11 @@ export const spotifyService = {
           artists: t.artists.map(a => a.name).join(', '),
         })),
       };
+      
+      // Salva no cache antes de retornar
+      albumDetailsCache.set(spotifyId, mappedDetails);
+      return mappedDetails;
+      
     } catch (error) {
       console.error('[Spotify Details] Exceção:', error);
       return null;
@@ -105,6 +118,10 @@ export const spotifyService = {
   },
 
   async getArtistGenres(artistId) {
+    if (artistGenresCache.has(artistId)) {
+      return artistGenresCache.get(artistId);
+    }
+
     const token = await spotifyAuth.getValidToken();
     if (!token) return [];
 
@@ -120,7 +137,12 @@ export const spotifyService = {
       }
 
       const artist = await response.json();
-      return artist.genres || [];
+      const genres = artist.genres || [];
+      
+      // Salva no cache
+      artistGenresCache.set(artistId, genres);
+      return genres;
+      
     } catch (error) {
       console.error('[Spotify Artist Genres] Exceção:', error);
       return [];

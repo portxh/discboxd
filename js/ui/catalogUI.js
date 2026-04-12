@@ -391,14 +391,27 @@ export const catalogUI = {
     }
     } catch (error) {
       console.error('[catalogUI] Erro ao buscar detalhes:', error);
-      this.albumDetailTracks.innerHTML = `
-        <div class="py-4 space-y-2">
-          <p class="text-xs text-red-500 font-bold">Falha no Carregamento</p>
-          <div class="bg-red-50 border border-red-100 text-red-800 text-[10px] p-2 rounded max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">
-            ${error.message || error}
+      
+      const isRateLimit = error.message && error.message.includes('429');
+      
+      if (isRateLimit) {
+        this.albumDetailTracks.innerHTML = `
+          <div class="py-6 px-4 bg-[var(--accent)]/5 rounded-xl border border-[var(--accent)]/20 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-[var(--accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <p class="text-sm font-semibold text-[var(--accent)] mb-1">Servidores Ocupados</p>
+            <p class="text-xs text-gray-500">Muitos álbuns abertos recentemente. O Spotify bloqueou temporariamente nossas requisições. Tente de novo em alguns minutos.</p>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        this.albumDetailTracks.innerHTML = `
+          <div class="py-4 space-y-2">
+            <p class="text-xs text-red-500 font-bold">Falha no Carregamento</p>
+            <div class="bg-red-50 border border-red-100 text-red-800 text-[10px] p-2 rounded max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">
+              ${error.message || error}
+            </div>
+          </div>
+        `;
+      }
     }
   },
 
