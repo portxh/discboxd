@@ -17,6 +17,14 @@ Discboxd é uma plataforma premium para colecionadores de música, inspirada no 
     - Filtros dinâmicos na coleção local.
     - Ordenação por data de adição, lançamento ou nome.
     - Visualização detalhada de álbuns com tracklists completas.
+- **Estatísticas do Acervo**:
+    - Total de álbuns, artista mais colecionado e década dominante.
+    - Painel visual com insights calculados em tempo real.
+- **Compartilhamento**:
+    - Geração de card visual da coleção para download ou cópia.
+- **Micro-Animações**:
+    - Transições suaves entre telas e ao adicionar/remover álbuns.
+    - Efeitos de entrada staggered nos cards da coleção.
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -44,4 +52,4 @@ Discboxd é uma plataforma premium para colecionadores de música, inspirada no 
     - Abra o `index.html` através de um servidor local.
 
 ---
-Desenvolvido como projeto de portfólio musical.
+Desenvolvido como projeto acadêmico de Projeto de Software.

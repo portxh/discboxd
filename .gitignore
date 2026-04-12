@@ -1,8 +1,13 @@
-# Documentos de Planejamento (Local)
+# Documentos de Planejamento e Entregas (Local)
 docs/
 roadmap_acs.md
 roteiro_video.md
 entrega_ac1.md
+entrega_ac2.md
+
+# Vídeos e PDFs de Entrega
+*.mp4
+*.pdf
 
 # Logs e Cache
 .DS_Store
@@ -11,6 +16,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Configurações de Ambiente (Se houver)
+# Configurações de Ambiente
 .env
 .env.local

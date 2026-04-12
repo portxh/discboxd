@@ -9,7 +9,7 @@
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💿</text></svg>">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Tailwind CSS (CDN para desenvolvimento rápido - será otimizado na AC2) -->
+  <!-- Tailwind CSS (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./css/style.css" />
 
@@ -366,34 +366,80 @@
       </div>
 
       <section>
+        <!-- Painel de Estatísticas -->
+        <div id="collection-stats" class="hidden mx-auto w-full px-4 mb-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="stat-card apple-card p-4 bg-white/60 backdrop-blur-md border border-white/40 text-center">
+              <span class="text-3xl font-bold text-[var(--accent)]" id="stat-total">0</span>
+              <p class="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-1">Álbuns</p>
+            </div>
+            <div class="stat-card apple-card p-4 bg-white/60 backdrop-blur-md border border-white/40 text-center">
+              <span class="text-sm font-bold text-[var(--text-primary)] truncate block" id="stat-top-artist">—</span>
+              <p class="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-1">Top Artista</p>
+            </div>
+            <div class="stat-card apple-card p-4 bg-white/60 backdrop-blur-md border border-white/40 text-center">
+              <span class="text-sm font-bold text-[var(--text-primary)]" id="stat-decade">—</span>
+              <p class="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mt-1">Década Dominante</p>
+            </div>
+            <div class="stat-card apple-card p-4 bg-white/60 backdrop-blur-md border border-white/40 text-center flex flex-col items-center">
+              <img id="stat-last-cover" class="h-10 w-10 rounded-lg object-cover shadow-sm mb-1" src="" alt="">
+              <p class="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">Último Adicionado</p>
+            </div>
+          </div>
+        </div>
+
         <div class="mx-auto w-full px-4 mb-4">
             <div class="flex items-center justify-between">
               <h2 class="text-xl md:text-2xl font-bold text-[#1D1D1F] flex items-center gap-2">
                 Minha Coleção 
                 <span id="collection-count" class="text-sm font-normal text-[var(--text-secondary)] bg-white/50 px-2 py-0.5 rounded-full shadow-sm"></span>
               </h2>
+              <button id="btn-share-collection" class="hidden apple-btn-secondary px-4 py-2 rounded-xl text-xs font-semibold transition-all hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] gap-1.5 items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                Compartilhar
+              </button>
             </div>
         </div>
         <div id="collection-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           <!-- Cards preenchidos via JS -->
         </div>
 
-        <!-- Estado Vazio -->
+        <!-- Estado Vazio (Onboarding) -->
         <div id="collection-empty"
           class="apple-card p-8 md:p-12 text-center backdrop-blur-md bg-white/80 relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent pointer-events-none"></div>
-          <div
-            class="w-16 h-16 bg-blue-100 text-[var(--accent)] rounded-full flex items-center justify-center mb-6 mx-auto relative z-10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          <div class="empty-icon-pulse w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-50 text-[var(--accent)] rounded-full flex items-center justify-center mb-6 mx-auto relative z-10 shadow-lg shadow-blue-100/50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
           </div>
-          <h2 class="text-2xl font-bold mb-3 relative z-10">Sua coleção está vazia</h2>
-          <p class="text-[var(--text-secondary)] max-w-md mx-auto mb-6 relative z-10">
-            Conecte-se ao Spotify e comece a buscar os álbuns que marcaram sua vida.
+          <h2 class="text-2xl font-bold mb-2 relative z-10">Monte sua coleção</h2>
+          <p class="text-[var(--text-secondary)] max-w-md mx-auto mb-8 relative z-10">
+            Três passos para começar a catalogar a trilha sonora da sua vida.
           </p>
+
+          <!-- Steps de Onboarding -->
+          <div class="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 relative z-10 mb-8">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-[#1DB954]/10 text-[#1DB954] flex items-center justify-center text-sm font-bold flex-shrink-0">1</div>
+              <span class="text-sm text-[var(--text-primary)] font-medium">Conecte o Spotify</span>
+            </div>
+            <svg class="hidden md:block h-4 w-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-[var(--accent)]/10 text-[var(--accent)] flex items-center justify-center text-sm font-bold flex-shrink-0">2</div>
+              <span class="text-sm text-[var(--text-primary)] font-medium">Busque um álbum</span>
+            </div>
+            <svg class="hidden md:block h-4 w-4 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center text-sm font-bold flex-shrink-0">3</div>
+              <span class="text-sm text-[var(--text-primary)] font-medium">Adicione à coleção</span>
+            </div>
+          </div>
+
+          <button id="btn-empty-action" class="apple-btn w-auto px-8 py-3 text-sm mx-auto relative z-10 bg-[#1DB954] hover:bg-[#1ed760] border-none gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            Conectar Spotify
+          </button>
         </div>
       </section>
 
@@ -680,6 +726,32 @@
             <p id="album-detail-copyright" class="mt-2 text-[9px] opacity-70"></p>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Share Collection Modal -->
+  <div id="share-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="apple-card max-w-lg w-full p-6 bg-white shadow-2xl animate-modal-in">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">Compartilhar Coleção</h3>
+        <button id="btn-close-share" class="h-8 w-8 bg-gray-50 hover:bg-gray-100 text-gray-400 rounded-full flex items-center justify-center transition-all">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        </button>
+      </div>
+      <div class="bg-gray-50 rounded-xl p-4 mb-4 flex justify-center">
+        <canvas id="share-canvas" class="rounded-lg shadow-md max-w-full"></canvas>
+      </div>
+      <div class="flex gap-3">
+        <button id="btn-download-share" class="apple-btn flex-1 py-3 text-sm gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          Baixar Imagem
+        </button>
+        <button id="btn-copy-share" class="apple-btn-secondary flex-1 py-3 text-sm rounded-xl font-medium gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+          Copiar
+        </button>
       </div>
     </div>
   </div>

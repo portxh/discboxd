@@ -180,7 +180,7 @@ export const authUI = {
     if(this.landingView) {
       this.landingView.style.display = 'flex';
       this.landingView.classList.add('flex-col', 'items-center');
-      this.landingView.classList.add('fade-in');
+      this.landingView.classList.add('animate-crossfade');
     }
   },
 
@@ -190,7 +190,7 @@ export const authUI = {
     if(this.dashboardView) {
       this.dashboardView.style.display = 'flex';
       this.dashboardView.classList.add('flex-col');
-      this.dashboardView.classList.add('fade-in');
+      this.dashboardView.classList.add('animate-crossfade');
     }
   },
 
@@ -199,7 +199,7 @@ export const authUI = {
     if(this.dashboardView) this.dashboardView.style.display = 'none';
     if(this.loginView) {
       this.loginView.style.display = 'block';
-      this.loginView.classList.add('fade-in');
+      this.loginView.classList.add('animate-crossfade');
     }
   }
 

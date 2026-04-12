@@ -4,6 +4,7 @@ import { spotifyAuth } from '../services/spotifyAuth.js';
 import { spotifyService } from '../services/spotifyService.js';
 import { collectionService } from '../services/collectionService.js';
 import { listeningService } from '../services/listeningService.js';
+import { shareUI } from './shareUI.js';
 
 export const catalogUI = {
 
@@ -105,6 +106,22 @@ export const catalogUI = {
     this.albumPopularityContainer = document.getElementById('album-popularity-container');
     this.headerLogo = document.getElementById('header-logo');
 
+    // Stats
+    this.collectionStatsPanel = document.getElementById('collection-stats');
+    this.statTotal = document.getElementById('stat-total');
+    this.statTopArtist = document.getElementById('stat-top-artist');
+    this.statDecade = document.getElementById('stat-decade');
+    this.statLastCover = document.getElementById('stat-last-cover');
+
+    // Share
+    this.btnShareCollection = document.getElementById('btn-share-collection');
+
+    // Empty State
+    this.btnEmptyAction = document.getElementById('btn-empty-action');
+
+    // Init shareUI
+    shareUI.init();
+
     this.setupListeners();
   },
 
@@ -157,6 +174,21 @@ export const catalogUI = {
     });
     this.collectionSort?.addEventListener('change', () => this.applyFilterAndSort());
     this.collectionGroup?.addEventListener('change', () => this.applyFilterAndSort());
+
+    // Share button
+    this.btnShareCollection?.addEventListener('click', () => {
+      const userName = document.getElementById('header-user-name')?.textContent || '';
+      shareUI.open(this.cachedCollection, userName);
+    });
+
+    // Empty state action button
+    this.btnEmptyAction?.addEventListener('click', () => {
+      if (spotifyAuth.isConnected()) {
+        this.searchInput?.focus();
+      } else {
+        spotifyAuth.redirectToSpotify();
+      }
+    });
 
     // Clicar em atividade de amigo (mock)
     document.addEventListener('click', async (e) => {
@@ -303,6 +335,12 @@ export const catalogUI = {
     }
 
     this.albumDetailModal.classList.remove('hidden');
+    // Animação do modal
+    const modalCard = this.albumDetailModal.querySelector('.apple-card');
+    if (modalCard) {
+      modalCard.classList.remove('animate-modal-out');
+      modalCard.classList.add('animate-modal-in');
+    }
 
     // Limpa estados de carregamento anteriores
     this.albumDetailTotalTracks.textContent = '';
@@ -362,7 +400,17 @@ export const catalogUI = {
   },
 
   closeAlbumDetail() {
-    this.albumDetailModal.classList.add('hidden');
+    const modalCard = this.albumDetailModal?.querySelector('.apple-card');
+    if (modalCard) {
+      modalCard.classList.remove('animate-modal-in');
+      modalCard.classList.add('animate-modal-out');
+      modalCard.addEventListener('animationend', () => {
+        this.albumDetailModal.classList.add('hidden');
+        modalCard.classList.remove('animate-modal-out');
+      }, { once: true });
+    } else {
+      this.albumDetailModal.classList.add('hidden');
+    }
     this.currentDetailAlbum = null;
   },
 
@@ -478,6 +526,20 @@ export const catalogUI = {
       this.collectionCount.textContent = total > 0 ? `(${total})` : '';
     }
 
+    // Stats
+    this.renderStats(this.cachedCollection);
+
+    // Share button visibility
+    if (this.btnShareCollection) {
+      if (this.cachedCollection.length > 0) {
+        this.btnShareCollection.classList.remove('hidden');
+        this.btnShareCollection.classList.add('inline-flex');
+      } else {
+        this.btnShareCollection.classList.add('hidden');
+        this.btnShareCollection.classList.remove('inline-flex');
+      }
+    }
+
     const groupBy = this.collectionGroup?.value || 'none';
 
 
@@ -512,6 +574,86 @@ export const catalogUI = {
     });
 
     this.renderCollection(items);
+  },
+
+  // === ESTATÍSTICAS ===
+
+  renderStats(items) {
+    if (!this.collectionStatsPanel) return;
+
+    if (items.length === 0) {
+      this.collectionStatsPanel.classList.add('hidden');
+      this.updateEmptyState();
+      return;
+    }
+
+    this.collectionStatsPanel.classList.remove('hidden');
+
+    // Total
+    if (this.statTotal) this.statTotal.textContent = items.length;
+
+    // Top Artista
+    if (this.statTopArtist) {
+      const artistCount = {};
+      items.forEach(entry => {
+        const artist = entry.album.artist || 'Desconhecido';
+        artistCount[artist] = (artistCount[artist] || 0) + 1;
+      });
+      const topArtist = Object.entries(artistCount).sort((a, b) => b[1] - a[1])[0];
+      this.statTopArtist.textContent = topArtist ? topArtist[0] : '—';
+    }
+
+    // Década Dominante
+    if (this.statDecade) {
+      const decadeCount = {};
+      items.forEach(entry => {
+        const year = entry.album.release_year;
+        if (year) {
+          const decade = Math.floor(year / 10) * 10;
+          decadeCount[decade] = (decadeCount[decade] || 0) + 1;
+        }
+      });
+      const topDecade = Object.entries(decadeCount).sort((a, b) => b[1] - a[1])[0];
+      this.statDecade.textContent = topDecade ? `Anos ${topDecade[0]}` : '—';
+    }
+
+    // Último Adicionado
+    if (this.statLastCover) {
+      const sorted = [...items].sort((a, b) => new Date(b.added_at) - new Date(a.added_at));
+      const last = sorted[0]?.album;
+      if (last?.cover_url) {
+        this.statLastCover.src = last.cover_url;
+        this.statLastCover.alt = last.title;
+        this.statLastCover.classList.remove('hidden');
+      } else {
+        this.statLastCover.classList.add('hidden');
+      }
+    }
+
+    this.updateEmptyState();
+  },
+
+  // === EMPTY STATE ===
+
+  updateEmptyState() {
+    if (!this.btnEmptyAction) return;
+    const connected = spotifyAuth.isConnected();
+
+    if (connected) {
+      this.btnEmptyAction.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        Buscar Álbuns
+      `;
+      this.btnEmptyAction.classList.remove('bg-[#1DB954]', 'hover:bg-[#1ed760]');
+      this.btnEmptyAction.classList.add('bg-[var(--accent)]', 'hover:bg-[var(--accent-hover)]');
+    } else {
+      this.btnEmptyAction.innerHTML = `
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Conectar Spotify
+      `;
+      this.btnEmptyAction.classList.add('bg-[#1DB954]', 'hover:bg-[#1ed760]');
+      this.btnEmptyAction.classList.remove('bg-[var(--accent)]', 'hover:bg-[var(--accent-hover)]');
+    }
   },
 
   renderGrouped(items, groupBy) {
@@ -622,7 +764,7 @@ export const catalogUI = {
 
   createCollectionCard(album) {
     const card = document.createElement('div');
-    card.className = 'collection-card group cursor-pointer';
+    card.className = 'collection-card group cursor-pointer animate-add';
     const nocover = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Crect fill=%22%23F5F5F7%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2386868B%22 font-family=%22Inter,sans-serif%22 font-size=%2232%22%3E%F0%9F%92%BF%3C/text%3E%3C/svg%3E';
     card.innerHTML = `
       <div class="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-white">
@@ -647,9 +789,14 @@ export const catalogUI = {
     const btnRemove = card.querySelector('.btn-remove-album');
     btnRemove?.addEventListener('click', async (e) => {
       e.stopPropagation();
-      btnRemove.textContent = 'Removendo...';
-      const { success } = await collectionService.removeFromCollection(this.currentUserId, album.id);
-      if (success) await this.loadCollection(this.currentUserId);
+      // Animação de remoção
+      card.classList.remove('animate-add');
+      card.classList.add('animate-remove');
+      card.addEventListener('animationend', async () => {
+        btnRemove.textContent = 'Removendo...';
+        const { success } = await collectionService.removeFromCollection(this.currentUserId, album.id);
+        if (success) await this.loadCollection(this.currentUserId);
+      }, { once: true });
     });
 
     return card;
@@ -662,7 +809,7 @@ export const catalogUI = {
     if (this.listeningInterval) clearInterval(this.listeningInterval);
     this.listeningInterval = setInterval(() => this.pollListeningNow(), 30000);
 
-    // P4: Pausar polling quando a aba está em background
+    // Pausar polling quando a aba está em background
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         clearInterval(this.listeningInterval);
