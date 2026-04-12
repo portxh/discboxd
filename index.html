@@ -733,24 +733,35 @@
 
   <!-- Share Collection Modal -->
   <div id="share-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="apple-card max-w-lg w-full p-6 bg-white shadow-2xl animate-modal-in">
+    <div class="apple-card max-w-lg w-full p-6 bg-white shadow-2xl animate-modal-in max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-bold">Compartilhar Coleção</h3>
         <button id="btn-close-share" class="h-8 w-8 bg-gray-50 hover:bg-gray-100 text-gray-400 rounded-full flex items-center justify-center transition-all">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
         </button>
       </div>
-      <div class="bg-gray-50 rounded-xl p-4 mb-4 flex justify-center">
-        <canvas id="share-canvas" class="rounded-lg shadow-md max-w-full"></canvas>
+
+      <!-- Format Selector -->
+      <div class="flex gap-2 mb-4">
+        <button data-format="grid" class="share-format-btn active flex-1 py-2 px-3 rounded-xl text-xs font-semibold border-2 border-[var(--accent)] bg-[var(--accent)]/5 text-[var(--accent)] transition-all">
+          ◻️ Grid (1:1)
+        </button>
+        <button data-format="story" class="share-format-btn flex-1 py-2 px-3 rounded-xl text-xs font-semibold border-2 border-gray-200 text-gray-500 hover:border-gray-300 transition-all">
+          📱 Story (9:16)
+        </button>
+      </div>
+
+      <div class="bg-gray-50 rounded-xl p-4 mb-4 flex justify-center overflow-hidden">
+        <canvas id="share-canvas" class="rounded-lg shadow-md" style="max-width:100%; max-height:420px; object-fit:contain;"></canvas>
       </div>
       <div class="flex gap-3">
-        <button id="btn-download-share" class="apple-btn flex-1 py-3 text-sm gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-          Baixar Imagem
+        <button id="btn-download-share" class="apple-btn flex-1 py-3 text-sm inline-flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+          <span>Baixar Imagem</span>
         </button>
-        <button id="btn-copy-share" class="apple-btn-secondary flex-1 py-3 text-sm rounded-xl font-medium gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-          Copiar
+        <button id="btn-copy-share" class="apple-btn-secondary flex-1 py-3 text-sm rounded-xl font-medium inline-flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+          <span>Copiar</span>
         </button>
       </div>
     </div>

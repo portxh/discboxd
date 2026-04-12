@@ -476,6 +476,11 @@ body {
 }
 
 #share-canvas {
-  max-height: 400px;
-  width: auto;
+  display: block;
+}
+
+.share-format-btn.active {
+  border-color: var(--accent) !important;
+  background: rgba(0, 113, 227, 0.05);
+  color: var(--accent);
 }
