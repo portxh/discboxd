@@ -361,11 +361,9 @@ export const catalogUI = {
   },
 
   async fetchAndRenderExtraDetails(spotifyId) {
-    const details = await spotifyService.getAlbumDetails(spotifyId);
-    if (!details) {
-      this.albumDetailTracks.innerHTML = '<p class="text-xs text-red-500 py-4">Não foi possível carregar as músicas.</p>';
-      return;
-    }
+    try {
+      const details = await spotifyService.getAlbumDetails(spotifyId);
+      if (!details) throw new Error("A requisição retornou vazio ou falhou sem erro explícito.");
 
 
 
@@ -390,6 +388,17 @@ export const catalogUI = {
     if (this.albumDetailPopularity && this.albumPopularityContainer && details.popularity > 0) {
       this.albumDetailPopularity.textContent = `${details.popularity}% de alcance global`;
       this.albumPopularityContainer.classList.remove('hidden');
+    }
+    } catch (error) {
+      console.error('[catalogUI] Erro ao buscar detalhes:', error);
+      this.albumDetailTracks.innerHTML = `
+        <div class="py-4 space-y-2">
+          <p class="text-xs text-red-500 font-bold">Falha no Carregamento</p>
+          <div class="bg-red-50 border border-red-100 text-red-800 text-[10px] p-2 rounded max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">
+            ${error.message || error}
+          </div>
+        </div>
+      `;
     }
   },
 

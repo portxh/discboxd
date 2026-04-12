@@ -64,7 +64,11 @@ export const spotifyService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
-      if (!response.ok) return null;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Spotify Details] Erro HTTP:', response.status, response.statusText, 'Corpo:', errorText);
+        throw new Error(`HTTP ${response.status} - ${errorText}`);
+      }
 
       const album = await response.json();
 
@@ -109,7 +113,11 @@ export const spotifyService = {
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
-      if (!response.ok) return [];
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[Spotify Artist Genres] Erro HTTP:', response.status, response.statusText, 'Corpo:', errorText);
+        return [];
+      }
 
       const artist = await response.json();
       return artist.genres || [];
