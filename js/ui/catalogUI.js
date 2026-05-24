@@ -18,7 +18,7 @@ export const catalogUI = {
 
   // Camada de UI do Catálogo: Gerencia a exibição da Coleção, Buscas e Modal de Álbum
   collectionEmpty: null,
-  collectionCount: null,
+
   collectionFilter: null,
   collectionSort: null,
   collectionGroup: null,
@@ -86,7 +86,7 @@ export const catalogUI = {
     this.btnCloseSearch = document.getElementById('btn-close-search');
     this.collectionGrid = document.getElementById('collection-grid');
     this.collectionEmpty = document.getElementById('collection-empty');
-    this.collectionCount = document.getElementById('collection-count');
+
     this.collectionFilter = document.getElementById('unified-search-input');
     this.collectionSort = document.getElementById('collection-sort');
     this.collectionGroup = document.getElementById('collection-group');
@@ -832,12 +832,6 @@ export const catalogUI = {
         return a.title.toLowerCase().includes(filterQuery)
           || a.artist.toLowerCase().includes(filterQuery);
       });
-    }
-
-    // Contador
-    if (this.collectionCount) {
-      const total = this.cachedCollection.length;
-      this.collectionCount.textContent = total > 0 ? `(${total})` : '';
     }
 
     // Stats
