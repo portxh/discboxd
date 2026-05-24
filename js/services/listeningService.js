@@ -24,12 +24,13 @@ export const listeningService = {
 
       if (!data.is_playing || !data.item) return null;
 
-      return {
+      const trackInfo = {
         track: data.item.name,
         artist: data.item.artists.map(a => a.name).join(', '),
         albumCover: data.item.album?.images?.[0]?.url || null,
         albumName: data.item.album?.name || '',
       };
+      return trackInfo;
     } catch (err) {
       console.error('[Listening Now] Erro:', err);
       return null;

@@ -80,6 +80,18 @@ export const authService = {
       return { error: error.message };
     }
   },
+
+  async resetPassword(email) {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname,
+      });
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error: error.message };
+    }
+  },
   
    async getProfile(userId) {
      try {

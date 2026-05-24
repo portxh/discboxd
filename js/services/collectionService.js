@@ -57,6 +57,7 @@ export const collectionService = {
           user_id: userId,
           album_id: album.id,
           status: 'na_colecao',
+          updated_at: new Date().toISOString()
         }, { onConflict: 'user_id,album_id' });
 
       if (collError) throw collError;
@@ -93,7 +94,10 @@ export const collectionService = {
           id,
           status,
           rating,
+          review,
+          favorite_track,
           added_at,
+          updated_at,
           album:albums (
             id,
             spotify_id,
@@ -116,7 +120,10 @@ export const collectionService = {
             id,
             status,
             rating,
+            review,
+            favorite_track,
             added_at,
+            updated_at,
             album:albums (
               id,
               spotify_id,
@@ -173,5 +180,99 @@ export const collectionService = {
       console.error('Erro ao atualizar gêneros:', error.message);
       return false;
     }
+  },
+
+  async updateReview(userId, albumId, rating, reviewText, favoriteTrack) {
+    try {
+      const { error } = await supabase
+        .from('collection')
+        .update({ 
+          rating: rating || null, 
+          review: reviewText || null, 
+          favorite_track: favoriteTrack || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        .eq('album_id', albumId);
+
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Erro ao salvar resenha:', error.message);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getPublicFeed(limit = 20) {
+    try {
+      const { data, error } = await supabase
+        .from('collection')
+        .select(`
+          id,
+          rating,
+          review,
+          added_at,
+          user_id,
+          album:albums!inner(title, artist, cover_url)
+        `)
+        .order('added_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      
+      if (!data || data.length === 0) return [];
+
+      // Fetch profiles manually to avoid foreign key issues
+      const userIds = [...new Set(data.map(item => item.user_id))];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url, id')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesMap = {};
+      if (profilesData) {
+        profilesData.forEach(p => {
+          profilesMap[p.id] = p;
+        });
+      }
+
+      const enrichedData = data.map(item => ({
+        ...item,
+        profile: profilesMap[item.user_id] || { 
+          username: 'usuario', 
+          display_name: 'Usuário', 
+          avatar_url: '' 
+        }
+      }));
+
+      return enrichedData;
+    } catch (error) {
+      console.error('Erro ao buscar feed público:', error.message);
+      return [];
+    }
+  },
+
+  async searchUsers(query) {
+    if (!query) return [];
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error.message);
+      return [];
+    }
+  },
+
+  async getUserCollection(userId) {
+    // Mesma lógica do getCollection, mas para visualização pública
+    return this.getCollection(userId);
   }
 };

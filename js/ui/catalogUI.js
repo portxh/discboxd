@@ -1,10 +1,10 @@
 // UI do Catálogo — Busca, Coleção, Filtros, Agrupamento e Detalhes
 
 import { spotifyAuth } from '../services/spotifyAuth.js';
-import { spotifyService } from '../services/spotifyService.js';
+import { authService } from '../services/authService.js';
 import { collectionService } from '../services/collectionService.js';
+import { spotifyService } from '../services/spotifyService.js';
 import { listeningService } from '../services/listeningService.js';
-import { shareUI } from './shareUI.js';
 
 export const catalogUI = {
 
@@ -36,6 +36,7 @@ export const catalogUI = {
   listeningNowArtist: null,
   listeningNowCover: null,
   listeningInterval: null,
+  visibilityHandler: null,
 
   // Album Detail Modal
   albumDetailModal: null,
@@ -57,13 +58,27 @@ export const catalogUI = {
   albumPopularityContainer: null,
   currentDetailAlbum: null,
 
+  // Review Modal
+  reviewModal: null,
+  btnCloseReview: null,
+  reviewForm: null,
+  reviewRatingValue: null,
+  reviewAlbumId: null,
+  reviewText: null,
+  reviewAlbumCover: null,
+  reviewAlbumName: null,
+  reviewAlbumArtist: null,
+  reviewFavoriteTrackList: null,
+  reviewFavoriteTrackValue: null,
+  starIcons: [],
+
   // Estado
   currentUserId: null,
   searchTimeout: null,
   cachedCollection: [],
 
   init() {
-    this.searchInput = document.getElementById('search-input');
+    this.searchInput = document.getElementById('unified-search-input');
     this.searchResultsPanel = document.getElementById('search-results-panel');
     this.searchResultsGrid = document.getElementById('search-results-grid');
     this.searchLoading = document.getElementById('search-loading');
@@ -72,7 +87,7 @@ export const catalogUI = {
     this.collectionGrid = document.getElementById('collection-grid');
     this.collectionEmpty = document.getElementById('collection-empty');
     this.collectionCount = document.getElementById('collection-count');
-    this.collectionFilter = document.getElementById('collection-search');
+    this.collectionFilter = document.getElementById('unified-search-input');
     this.collectionSort = document.getElementById('collection-sort');
     this.collectionGroup = document.getElementById('collection-group');
     this.spotifyOverlay = document.getElementById('spotify-connect-overlay');
@@ -106,6 +121,20 @@ export const catalogUI = {
     this.albumPopularityContainer = document.getElementById('album-popularity-container');
     this.headerLogo = document.getElementById('header-logo');
 
+    // Review Modal
+    this.reviewModal = document.getElementById('review-modal');
+    this.btnCloseReview = document.getElementById('btn-close-review');
+    this.reviewForm = document.getElementById('review-form');
+    this.reviewRatingValue = document.getElementById('review-rating-value');
+    this.reviewAlbumId = document.getElementById('review-album-id');
+    this.reviewText = document.getElementById('review-text');
+    this.reviewAlbumCover = document.getElementById('review-album-cover');
+    this.reviewAlbumName = document.getElementById('review-album-name');
+    this.reviewAlbumArtist = document.getElementById('review-album-artist');
+    this.reviewFavoriteTrackList = document.getElementById('review-favorite-track-list');
+    this.reviewFavoriteTrackValue = document.getElementById('review-favorite-track-value');
+    this.starIcons = document.querySelectorAll('.star-icon');
+
     // Stats
     this.collectionStatsPanel = document.getElementById('collection-stats');
     this.statTotal = document.getElementById('stat-total');
@@ -113,23 +142,161 @@ export const catalogUI = {
     this.statDecade = document.getElementById('stat-decade');
     this.statLastCover = document.getElementById('stat-last-cover');
 
-    // Share
-    this.btnShareCollection = document.getElementById('btn-share-collection');
-
-    // Empty State
     this.btnEmptyAction = document.getElementById('btn-empty-action');
 
-    // Init shareUI
-    shareUI.init();
-
     this.setupListeners();
+    this.setupReviewModal();
   },
 
   // Utilitário para escapar HTML e prevenir XSS
   escapeHTML(str) {
+    if (!str) return '';
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  },
+
+  setupReviewModal() {
+    // Interação com as estrelas
+    this.starIcons.forEach(star => {
+      star.addEventListener('click', (e) => {
+        const value = parseInt(e.currentTarget.dataset.value);
+        this.reviewRatingValue.value = value;
+        this.updateStarsUI(value);
+      });
+      star.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          star.click();
+        }
+      });
+    });
+
+    // Fechar modal
+    this.btnCloseReview?.addEventListener('click', () => {
+      this.reviewModal.classList.add('hidden');
+    });
+
+    // Submeter form
+    this.reviewForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const albumId = this.reviewAlbumId.value;
+      const rating = this.reviewRatingValue.value ? parseInt(this.reviewRatingValue.value) : null;
+      const reviewText = this.reviewText.value.trim();
+      const favoriteTrack = this.reviewFavoriteTrackValue?.value || null;
+
+      const btn = document.getElementById('btn-save-review');
+      const originalText = btn.textContent;
+      btn.textContent = 'Salvando...';
+      btn.disabled = true;
+
+      const { success } = await collectionService.updateReview(this.currentUserId, albumId, rating, reviewText, favoriteTrack);
+      if (success) {
+        this.reviewModal.classList.add('hidden');
+        await this.loadCollection(this.currentUserId); // Recarregar coleção para atualizar estrelas
+      } else {
+        alert('Erro ao salvar avaliação.');
+      }
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+    });
+
+    const btnDeleteReview = document.getElementById('btn-delete-review');
+    btnDeleteReview?.addEventListener('click', async () => {
+      const albumId = this.reviewAlbumId.value;
+      const originalText = btnDeleteReview.textContent;
+      btnDeleteReview.textContent = 'Apagando...';
+      btnDeleteReview.disabled = true;
+
+      const { success } = await collectionService.updateReview(this.currentUserId, albumId, null, null, null);
+      if (success) {
+        this.reviewModal.classList.add('hidden');
+        await this.loadCollection(this.currentUserId);
+      } else {
+        alert('Erro ao excluir avaliação.');
+      }
+
+      btnDeleteReview.textContent = originalText;
+      btnDeleteReview.disabled = false;
+    });
+  },
+
+  updateStarsUI(value) {
+    this.starIcons.forEach(star => {
+      star.setAttribute('aria-checked', parseInt(star.dataset.value) <= value ? 'true' : 'false');
+      if (parseInt(star.dataset.value) <= value) {
+        star.classList.remove('text-gray-300');
+        star.classList.add('text-yellow-400');
+      } else {
+        star.classList.remove('text-yellow-400');
+        star.classList.add('text-gray-300');
+      }
+    });
+  },
+
+  async openReviewModal(entry) {
+    this.reviewAlbumId.value = entry.album.id;
+    this.reviewAlbumName.textContent = entry.album.title;
+    this.reviewAlbumArtist.textContent = entry.album.artist;
+    this.reviewAlbumCover.src = entry.album.cover_url || '';
+
+    // Set existing values
+    this.reviewRatingValue.value = entry.rating || 0;
+    this.updateStarsUI(entry.rating || 0);
+    this.reviewText.value = entry.review || '';
+
+    const btnDeleteReview = document.getElementById('btn-delete-review');
+    if (btnDeleteReview) {
+      if (entry.rating || entry.review || entry.favorite_track) {
+        btnDeleteReview.classList.remove('hidden');
+      } else {
+        btnDeleteReview.classList.add('hidden');
+      }
+    }
+
+    // Load tracks for favorite track selector
+    if (this.reviewFavoriteTrackList) {
+      this.reviewFavoriteTrackList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4 animate-pulse">Carregando faixas...</p>';
+      this.reviewFavoriteTrackValue.value = entry.favorite_track || '';
+
+      try {
+        const details = await spotifyService.getAlbumDetails(entry.album.spotify_id);
+        if (details && details.tracks) {
+          this.reviewFavoriteTrackList.innerHTML = '';
+          details.tracks.forEach(track => {
+            const isSelected = entry.favorite_track === track.name;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `text-left px-3 py-2 rounded-lg text-xs font-medium transition-all ${isSelected ? 'bg-[var(--accent)] text-white shadow-sm' : 'hover:bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:shadow-sm'}`;
+            btn.textContent = track.name;
+
+            btn.addEventListener('click', () => {
+              // Deselect if already selected
+              if (this.reviewFavoriteTrackValue.value === track.name) {
+                this.reviewFavoriteTrackValue.value = '';
+                btn.className = 'text-left px-3 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:shadow-sm';
+              } else {
+                // Clear previous selection visually
+                Array.from(this.reviewFavoriteTrackList.children).forEach(child => {
+                  child.className = 'text-left px-3 py-2 rounded-lg text-xs font-medium transition-all hover:bg-white text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:shadow-sm';
+                });
+                this.reviewFavoriteTrackValue.value = track.name;
+                btn.className = 'text-left px-3 py-2 rounded-lg text-xs font-medium transition-all bg-[var(--accent)] text-white shadow-sm';
+              }
+            });
+
+            this.reviewFavoriteTrackList.appendChild(btn);
+          });
+        } else {
+          this.reviewFavoriteTrackList.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Erro ao carregar faixas</p>';
+        }
+      } catch (err) {
+        this.reviewFavoriteTrackList.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Erro ao carregar faixas</p>';
+      }
+    }
+
+    this.reviewModal.classList.remove('hidden');
   },
 
   setupListeners() {
@@ -150,24 +317,61 @@ export const catalogUI = {
       }
     });
 
+    // Setup Segmented Controls for Search Scope
+    const scopeButtons = document.querySelectorAll('#search-scope-desktop button, #search-scope-mobile button');
+    this.searchScope = 'spotify';
+    
+    scopeButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const scope = e.currentTarget.dataset.scope;
+        this.searchScope = scope;
+        scopeButtons.forEach(b => {
+          if(b.dataset.scope === scope) b.classList.add('active');
+          else b.classList.remove('active');
+        });
+        
+        const searchInput = document.getElementById('unified-search-input');
+        if (searchInput) {
+           searchInput.placeholder = scope === 'spotify' ? 'Buscar álbuns no Spotify...' : 'Filtrar coleção...';
+           searchInput.value = ''; 
+           if(this.hideSearchResults) this.hideSearchResults(); 
+           this.applyFilterAndSort(); 
+        }
+        // Re-evaluate disabled state based on new scope
+        this.updateSpotifyState();
+      });
+    });
+
     this.searchInput?.addEventListener('input', (e) => {
-      clearTimeout(this.searchTimeout);
       const query = e.target.value.trim();
-      if (query.length < 3) { this.hideSearchResults(); return; }
-      this.searchTimeout = setTimeout(() => this.performSearch(query), 400);
+      if (this.searchScope === 'spotify') {
+        clearTimeout(this.searchTimeout);
+        if (query.length < 3) { if(this.hideSearchResults) this.hideSearchResults(); return; }
+        this.searchTimeout = setTimeout(() => this.performSearch(query), 400);
+      } else {
+        this.applyFilterAndSort();
+      }
     });
 
     this.btnCloseSearch?.addEventListener('click', () => {
-      this.hideSearchResults();
+      if(this.hideSearchResults) this.hideSearchResults();
       this.searchInput.value = '';
     });
 
-    this.collectionFilter?.addEventListener('input', () => this.applyFilterAndSort());
-    
-    this.btnToggleFilters?.addEventListener('click', () => {
-      this.collectionControls.classList.toggle('hidden');
-      this.collectionControls.classList.toggle('flex');
+    // Mobile filters toggle
+    const btnToggleFilters = document.getElementById('btn-toggle-filters');
+    const mobileAdvancedFilters = document.getElementById('mobile-advanced-filters');
+    btnToggleFilters?.addEventListener('click', () => {
+        if(mobileAdvancedFilters.classList.contains('mobile-filters-collapsed')) {
+             mobileAdvancedFilters.classList.remove('mobile-filters-collapsed');
+             mobileAdvancedFilters.classList.add('grid');
+        } else {
+             mobileAdvancedFilters.classList.add('mobile-filters-collapsed');
+             mobileAdvancedFilters.classList.remove('grid');
+        }
     });
+
+
 
     this.headerLogo?.addEventListener('click', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -190,7 +394,7 @@ export const catalogUI = {
       }
     });
 
-    // Clicar em atividade de amigo (mock)
+    // Clicar em atividade de amigo
     document.addEventListener('click', async (e) => {
       const card = e.target.closest('.friend-activity-card');
       if (card) {
@@ -300,7 +504,7 @@ export const catalogUI = {
     this.btnAlbumDetailAdd.classList.remove('hidden');
     this.btnAlbumDetailAdd.disabled = false;
     this.btnAlbumDetailAdd.classList.remove('bg-green-500', 'border-green-500');
-    
+
     if (this.btnAlbumDetailRemove) {
       this.btnAlbumDetailRemove.classList.add('hidden');
       this.btnAlbumDetailRemove.disabled = false;
@@ -314,7 +518,7 @@ export const catalogUI = {
       `;
       this.btnAlbumDetailAdd.disabled = true;
       this.btnAlbumDetailAdd.classList.add('bg-green-500', 'border-green-500');
-      
+
       if (this.btnAlbumDetailRemove) {
         this.btnAlbumDetailRemove.classList.remove('hidden');
         this.btnAlbumDetailRemove.innerHTML = `
@@ -356,6 +560,37 @@ export const catalogUI = {
       </div>
     `;
 
+    // Limpa a resenha
+    const reviewContainer = document.getElementById('album-detail-user-review');
+    const reviewStars = document.getElementById('album-detail-review-stars');
+    const reviewText = document.getElementById('album-detail-review-text');
+    const reviewTrack = document.getElementById('album-detail-review-track');
+    if (reviewContainer) reviewContainer.classList.add('hidden');
+
+    if (source === 'collection' && isInCollection) {
+      const collectionEntry = this.cachedCollection.find(e => e.album.spotify_id === album.spotify_id);
+      if (collectionEntry && (collectionEntry.rating || collectionEntry.review || collectionEntry.favorite_track)) {
+        if (reviewContainer) reviewContainer.classList.remove('hidden');
+        if (reviewStars) reviewStars.textContent = collectionEntry.rating ? `${'★'.repeat(Math.floor(collectionEntry.rating))}${'☆'.repeat(5 - Math.floor(collectionEntry.rating))}` : '';
+        if (reviewText) {
+          if (collectionEntry.review) {
+            reviewText.textContent = `"${collectionEntry.review}"`;
+            reviewText.classList.remove('hidden');
+          } else {
+            reviewText.classList.add('hidden');
+          }
+        }
+        if (reviewTrack) {
+          if (collectionEntry.favorite_track) {
+            reviewTrack.textContent = `★ Destaque: ${collectionEntry.favorite_track}`;
+            reviewTrack.classList.remove('hidden');
+          } else {
+            reviewTrack.classList.add('hidden');
+          }
+        }
+      }
+    }
+
     // Busca detalhes completos (tracklist, genres, label)
     this.fetchAndRenderExtraDetails(album.spotify_id);
   },
@@ -367,50 +602,82 @@ export const catalogUI = {
 
 
 
-    // Músicas
-    this.albumDetailTotalTracks.textContent = `${details.total_tracks} músicas`;
-    this.albumDetailTracks.innerHTML = details.tracks.map(t => `
-      <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group/track">
-        <span class="w-4 text-[10px] text-gray-400 text-right">${t.number}</span>
-        <div class="flex-1 min-w-0">
-          <p class="text-xs font-medium truncate">${t.name}</p>
-          ${t.artists !== details.artist ? `<p class="text-[10px] text-gray-400 truncate">${t.artists}</p>` : ''}
-        </div>
-        <span class="text-[10px] text-gray-400">${this.msToTime(t.duration_ms)}</span>
-      </div>
-    `).join('');
+      // Músicas
+      this.albumDetailTotalTracks.textContent = `${details.total_tracks} músicas`;
+      this.albumDetailTracks.replaceChildren();
+      details.tracks.forEach(t => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors group/track';
+        
+        const numSpan = document.createElement('span');
+        numSpan.className = 'w-4 text-[10px] text-gray-400 text-right';
+        numSpan.textContent = String(t.number);
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'flex-1 min-w-0';
+        
+        const pName = document.createElement('p');
+        pName.className = 'text-xs font-medium truncate';
+        pName.textContent = t.name;
+        contentDiv.appendChild(pName);
+        
+        if (t.artists !== details.artist) {
+          const pArt = document.createElement('p');
+          pArt.className = 'text-[10px] text-gray-400 truncate';
+          pArt.textContent = t.artists;
+          contentDiv.appendChild(pArt);
+        }
+        
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'text-[10px] text-gray-400';
+        timeSpan.textContent = this.msToTime(t.duration_ms);
+        
+        div.appendChild(numSpan);
+        div.appendChild(contentDiv);
+        div.appendChild(timeSpan);
+        this.albumDetailTracks.appendChild(div);
+      });
 
-    // Footer
-    this.albumDetailLabel.textContent = details.label || '';
-    this.albumDetailCopyright.textContent = details.copyrights || '';
+      // Footer
+      this.albumDetailLabel.textContent = details.label || '';
+      this.albumDetailCopyright.textContent = details.copyrights || '';
 
-    // Popularidade (Views)
-    if (this.albumDetailPopularity && this.albumPopularityContainer && details.popularity > 0) {
-      this.albumDetailPopularity.textContent = `${details.popularity}% de alcance global`;
-      this.albumPopularityContainer.classList.remove('hidden');
-    }
+      // Popularidade (Views)
+      if (this.albumDetailPopularity && this.albumPopularityContainer && details.popularity > 0) {
+        this.albumDetailPopularity.textContent = `${details.popularity}% de alcance global`;
+        this.albumPopularityContainer.classList.remove('hidden');
+      }
     } catch (error) {
       console.error('[catalogUI] Erro ao buscar detalhes:', error);
-      
+
       const isRateLimit = error.message && error.message.includes('429');
-      
+
       if (isRateLimit) {
-        this.albumDetailTracks.innerHTML = `
-          <div class="py-6 px-4 bg-[var(--accent)]/5 rounded-xl border border-[var(--accent)]/20 text-center">
+        this.albumDetailTracks.replaceChildren();
+        const div = document.createElement('div');
+        div.className = 'py-6 px-4 bg-[var(--accent)]/5 rounded-xl border border-[var(--accent)]/20 text-center';
+        div.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-[var(--accent)] mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
             <p class="text-sm font-semibold text-[var(--accent)] mb-1">Servidores Ocupados</p>
             <p class="text-xs text-gray-500">Muitos álbuns abertos recentemente. O Spotify bloqueou temporariamente nossas requisições. Tente de novo em alguns minutos.</p>
-          </div>
         `;
+        this.albumDetailTracks.appendChild(div);
       } else {
-        this.albumDetailTracks.innerHTML = `
-          <div class="py-4 space-y-2">
-            <p class="text-xs text-red-500 font-bold">Falha no Carregamento</p>
-            <div class="bg-red-50 border border-red-100 text-red-800 text-[10px] p-2 rounded max-h-40 overflow-y-auto font-mono whitespace-pre-wrap">
-              ${error.message || error}
-            </div>
-          </div>
-        `;
+        this.albumDetailTracks.replaceChildren();
+        const div = document.createElement('div');
+        div.className = 'py-4 space-y-2';
+        
+        const p = document.createElement('p');
+        p.className = 'text-xs text-red-500 font-bold';
+        p.textContent = 'Falha no Carregamento';
+        
+        const errDiv = document.createElement('div');
+        errDiv.className = 'bg-red-50 border border-red-100 text-red-800 text-[10px] p-2 rounded max-h-40 overflow-y-auto font-mono whitespace-pre-wrap';
+        errDiv.textContent = error.message || error;
+        
+        div.appendChild(p);
+        div.appendChild(errDiv);
+        this.albumDetailTracks.appendChild(div);
       }
     }
   },
@@ -442,10 +709,17 @@ export const catalogUI = {
     const connected = spotifyAuth.isConnected();
 
     if (this.searchInput) {
-      this.searchInput.disabled = !connected;
-      this.searchInput.placeholder = connected
-        ? 'Buscar álbuns no Spotify...'
-        : '🔒 Busca desabilitada — conecte o Spotify no seu Perfil';
+      // Only block the input when scope is 'spotify' AND Spotify is not connected
+      const isSpotifyScope = (this.searchScope === 'spotify');
+      const shouldDisable = !connected && isSpotifyScope;
+      this.searchInput.disabled = shouldDisable;
+      if (shouldDisable) {
+        this.searchInput.placeholder = '🔒 Busca desabilitada — conecte o Spotify no seu Perfil';
+      } else if (isSpotifyScope) {
+        this.searchInput.placeholder = 'Buscar álbuns no Spotify...';
+      } else {
+        this.searchInput.placeholder = 'Filtrar coleção...';
+      }
     }
 
     if (this.spotifyStatusBadge) {
@@ -504,15 +778,33 @@ export const catalogUI = {
       const card = document.createElement('div');
       card.className = 'album-card group cursor-pointer';
       const nocover = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Crect fill=%22%23F5F5F7%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2386868B%22 font-family=%22Inter,sans-serif%22 font-size=%2232%22%3E%F0%9F%92%BF%3C/text%3E%3C/svg%3E';
-      card.innerHTML = `
-        <div class="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 bg-white">
-          <img src="${this.escapeHTML(album.cover_url) || nocover}" alt="${this.escapeHTML(album.title)}" class="w-full aspect-square object-cover">
-          <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        </div>
-        <h4 class="text-sm font-semibold mt-2 truncate">${this.escapeHTML(album.title)}</h4>
-        <p class="text-xs text-[var(--text-secondary)] truncate">${this.escapeHTML(album.artist)}</p>
-        <p class="text-xs text-gray-400">${album.release_year || ''}</p>
-      `;
+      const imgDiv = document.createElement('div');
+      imgDiv.className = 'relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 bg-white';
+      
+      const img = document.createElement('img');
+      img.src = album.cover_url || nocover;
+      img.alt = album.title;
+      img.className = 'w-full aspect-square object-cover';
+      
+      const overlay = document.createElement('div');
+      overlay.className = 'absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300';
+      
+      imgDiv.appendChild(img);
+      imgDiv.appendChild(overlay);
+      
+      const h4 = document.createElement('h4');
+      h4.className = 'text-sm font-semibold mt-2 truncate';
+      h4.textContent = album.title;
+      
+      const pArtist = document.createElement('p');
+      pArtist.className = 'text-xs text-[var(--text-secondary)] truncate';
+      pArtist.textContent = album.artist;
+      
+      const pYear = document.createElement('p');
+      pYear.className = 'text-xs text-gray-400';
+      pYear.textContent = String(album.release_year || '');
+      
+      card.replaceChildren(imgDiv, h4, pArtist, pYear);
       card.addEventListener('click', () => this.openAlbumDetail(album, 'search'));
       this.searchResultsGrid.appendChild(card);
     });
@@ -694,7 +986,7 @@ export const catalogUI = {
     }
 
     // Agrupar
-    const groups = {};
+    const groups = new Map();
     items.forEach(entry => {
       let key;
       if (groupBy === 'artist') {
@@ -704,20 +996,20 @@ export const catalogUI = {
       } else {
         key = 'Todos';
       }
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(entry);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(entry);
     });
 
     // Ordenar grupos
     let sortedKeys;
     if (groupBy === 'year') {
-      sortedKeys = Object.keys(groups).sort((a, b) => {
+      sortedKeys = Array.from(groups.keys()).sort((a, b) => {
         const na = parseInt(a) || 0;
         const nb = parseInt(b) || 0;
         return nb - na; // Mais recente primeiro
       });
     } else {
-      sortedKeys = Object.keys(groups).sort((a, b) => a.localeCompare(b));
+      sortedKeys = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
     }
 
     // Resetar para layout não-grid
@@ -725,18 +1017,30 @@ export const catalogUI = {
 
     sortedKeys.forEach(key => {
       const section = document.createElement('div');
-      const albumsInGroup = groups[key];
+      const albumsInGroup = groups.get(key);
 
-      section.innerHTML = `
-        <button class="artist-group-toggle flex items-center gap-2 w-full text-left mb-3 group/toggle cursor-pointer">
+      const btn = document.createElement('button');
+      btn.className = 'artist-group-toggle flex items-center gap-2 w-full text-left mb-3 group/toggle cursor-pointer';
+      btn.innerHTML = `
           <svg class="h-4 w-4 text-gray-400 transition-transform duration-200 group-open/toggle:rotate-90 artist-chevron" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
           </svg>
-          <span class="text-lg font-bold">${key}</span>
-          <span class="text-sm text-[var(--text-secondary)] font-normal">(${albumsInGroup.length})</span>
-        </button>
-        <div class="artist-group-content grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
       `;
+      const spanTitle = document.createElement('span');
+      spanTitle.className = 'text-lg font-bold';
+      spanTitle.textContent = String(key);
+      
+      const spanCount = document.createElement('span');
+      spanCount.className = 'text-sm text-[var(--text-secondary)] font-normal';
+      spanCount.textContent = `(${albumsInGroup.length})`;
+      
+      btn.appendChild(spanTitle);
+      btn.appendChild(spanCount);
+      
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'artist-group-content grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4';
+      
+      section.replaceChildren(btn, contentDiv);
 
       const toggle = section.querySelector('.artist-group-toggle');
       const content = section.querySelector('.artist-group-content');
@@ -751,8 +1055,7 @@ export const catalogUI = {
       });
 
       albumsInGroup.forEach(entry => {
-        const album = entry.album;
-        const card = this.createCollectionCard(album);
+        const card = this.createCollectionCard(entry);
         content.appendChild(card);
       });
 
@@ -779,32 +1082,97 @@ export const catalogUI = {
     }
 
     items.forEach(entry => {
-      const card = this.createCollectionCard(entry.album);
+      const card = this.createCollectionCard(entry);
       this.collectionGrid.appendChild(card);
     });
   },
 
-  createCollectionCard(album) {
+  createCollectionCard(entry) {
+    const album = entry.album || entry; // fallback para busca
+    const isCollection = !!entry.added_at;
+
     const card = document.createElement('div');
-    card.className = 'collection-card group cursor-pointer animate-add';
+    card.className = 'collection-card group cursor-pointer animate-add flex flex-col h-full';
     const nocover = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 300%22%3E%3Crect fill=%22%23F5F5F7%22 width=%22300%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%2386868B%22 font-family=%22Inter,sans-serif%22 font-size=%2232%22%3E%F0%9F%92%BF%3C/text%3E%3C/svg%3E';
-    card.innerHTML = `
-      <div class="relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-white">
-        <img src="${this.escapeHTML(album.cover_url) || nocover}" alt="${this.escapeHTML(album.title)}" class="w-full aspect-square object-cover">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
-          <button class="btn-remove-album apple-btn-secondary w-full py-2 text-xs rounded-lg border-white/50 text-white hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors" data-album-id="${album.id}">
-            Remover
-          </button>
-        </div>
-      </div>
-      <h4 class="text-sm font-semibold mt-2 truncate">${this.escapeHTML(album.title)}</h4>
-      <p class="text-xs text-[var(--text-secondary)] truncate">${this.escapeHTML(album.artist)}</p>
-    `;
+
+    // Rating HTML
+    const imgDiv = document.createElement('div');
+    imgDiv.className = 'relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 bg-white';
+    
+    const img = document.createElement('img');
+    img.src = album.cover_url || nocover;
+    img.alt = album.title;
+    img.className = 'w-full aspect-square object-cover';
+    imgDiv.appendChild(img);
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-2 md:p-3 gap-2';
+    
+    if (isCollection) {
+      const btnReview = document.createElement('button');
+      btnReview.className = 'btn-review-album apple-btn w-full py-1.5 md:py-2 text-[10px] md:text-xs rounded-lg text-white mb-1 border border-white/20';
+      btnReview.dataset.albumId = String(album.id);
+      btnReview.textContent = 'Avaliar';
+      
+      const btnRemove = document.createElement('button');
+      btnRemove.className = 'btn-remove-album apple-btn-secondary w-full py-1.5 md:py-2 text-[10px] md:text-xs rounded-lg border-white/50 text-white hover:bg-red-500 hover:text-white hover:border-red-500 transition-colors';
+      btnRemove.dataset.albumId = String(album.id);
+      btnRemove.textContent = 'Remover';
+      
+      overlay.appendChild(btnReview);
+      overlay.appendChild(btnRemove);
+    }
+    imgDiv.appendChild(overlay);
+    
+    const h4 = document.createElement('h4');
+    h4.className = 'text-xs md:text-sm font-semibold mt-2 truncate';
+    h4.textContent = album.title;
+    
+    const pArtist = document.createElement('p');
+    pArtist.className = 'text-[10px] md:text-xs text-[var(--text-secondary)] truncate';
+    pArtist.textContent = album.artist;
+    
+    card.replaceChildren(imgDiv, h4, pArtist);
+    
+    if (isCollection) {
+      if (entry.rating) {
+        const ratingDiv = document.createElement('div');
+        ratingDiv.className = 'flex items-center text-yellow-400 mt-1';
+        ratingDiv.textContent = '★'.repeat(Math.floor(entry.rating)) + '☆'.repeat(5 - Math.floor(entry.rating));
+        card.appendChild(ratingDiv);
+      } else {
+        const btnRate = document.createElement('button');
+        btnRate.className = 'btn-rate-text text-[10px] text-[var(--accent)] mt-1 font-medium hover:underline text-left';
+        btnRate.tabIndex = 0;
+        btnRate.textContent = 'Avaliar álbum';
+        card.appendChild(btnRate);
+      }
+    }
+    
+    if (entry.favorite_track) {
+      const pFav = document.createElement('p');
+      pFav.className = 'text-[10px] text-[var(--accent)] font-medium truncate mt-1';
+      pFav.textContent = '★ Destaque: ' + entry.favorite_track;
+      card.appendChild(pFav);
+    }
 
     // Clicar no card abre detalhes
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.btn-remove-album')) return; // Não abrir detalhe se clicar em remover
-      this.openAlbumDetail(album, 'collection');
+      if (e.target.closest('.btn-remove-album') || e.target.closest('.btn-review-album')) return; // Não abrir detalhe se clicar em ações
+      this.openAlbumDetail(album, isCollection ? 'collection' : 'search');
+    });
+
+    // Botão Avaliar
+    const btnReview = card.querySelector('.btn-review-album');
+    btnReview?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openReviewModal(entry);
+    });
+
+    const btnRateText = card.querySelector('.btn-rate-text');
+    btnRateText?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.openReviewModal(entry);
     });
 
     // Botão remover
@@ -831,8 +1199,13 @@ export const catalogUI = {
     if (this.listeningInterval) clearInterval(this.listeningInterval);
     this.listeningInterval = setInterval(() => this.pollListeningNow(), 30000);
 
+    // Remove listener anterior para evitar acúmulo entre chamadas
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+    }
+
     // Pausar polling quando a aba está em background
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (document.hidden) {
         clearInterval(this.listeningInterval);
         this.listeningInterval = null;
@@ -840,7 +1213,8 @@ export const catalogUI = {
         this.pollListeningNow();
         this.listeningInterval = setInterval(() => this.pollListeningNow(), 30000);
       }
-    });
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   },
 
   stopListeningNow() {

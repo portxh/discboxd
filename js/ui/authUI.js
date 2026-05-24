@@ -1,4 +1,5 @@
 import { authService } from '../services/authService.js';
+import { collectionService } from '../services/collectionService.js';
 
 // Camada de UI: Gerencia as visões de Landing, Login e Cadastro
 
@@ -32,10 +33,17 @@ export const authUI = {
   registerNameInput: null,
   registerUsernameInput: null,
   registerBtn: null,
-  
+
 
   logoutBtn: null,
   loginSpotifyModalBtn: null,
+
+  forgotPasswordModal: null,
+  btnToggleForgotPassword: null,
+  btnCloseForgotPassword: null,
+  forgotPasswordForm: null,
+  forgotPasswordEmailInput: null,
+  btnSubmitForgotPassword: null,
 
   init() {
     this.landingView = document.getElementById('landing-view');
@@ -56,6 +64,13 @@ export const authUI = {
     this.registerBtn = document.getElementById('btn-register');
     this.logoutBtn = document.getElementById('btn-logout');
     this.loginSpotifyModalBtn = document.getElementById('btn-login-spotify-modal');
+
+    this.forgotPasswordModal = document.getElementById('forgot-password-modal');
+    this.btnToggleForgotPassword = document.getElementById('toggle-forgot-password');
+    this.btnCloseForgotPassword = document.getElementById('btn-close-forgot-password');
+    this.forgotPasswordForm = document.getElementById('forgot-password-form');
+    this.forgotPasswordEmailInput = document.getElementById('forgot-password-email');
+    this.btnSubmitForgotPassword = document.getElementById('btn-submit-forgot-password');
 
     this.setupViewToggles();
     this.setupSubmitListeners();
@@ -81,6 +96,21 @@ export const authUI = {
       this.loginForm.classList.remove('hidden');
       this.loginForm.classList.add('fade-in');
     });
+
+    this.btnToggleForgotPassword?.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.forgotPasswordModal?.classList.remove('hidden');
+    });
+
+    this.btnCloseForgotPassword?.addEventListener('click', () => {
+      this.forgotPasswordModal?.classList.add('hidden');
+    });
+    
+    this.forgotPasswordModal?.addEventListener('click', (e) => {
+      if (e.target === this.forgotPasswordModal) {
+        this.forgotPasswordModal.classList.add('hidden');
+      }
+    });
   },
 
   setupSubmitListeners() {
@@ -93,7 +123,7 @@ export const authUI = {
       const password = this.loginPasswordInput.value;
 
       const { data, error } = await authService.signIn(email, password);
-      
+
       this.setLoading(this.loginBtn, false);
 
       if (error) {
@@ -113,13 +143,13 @@ export const authUI = {
       const name = this.registerNameInput.value;
       const username = this.registerUsernameInput.value.toLowerCase().trim();
 
-      if(password.length < 6) {
+      if (password.length < 6) {
         this.setLoading(this.registerBtn, false);
         return this.showError('Sua senha deve ter no mínimo 6 caracteres.');
       }
 
       const { data, error } = await authService.signUp(email, password, name, username);
-      
+
       this.setLoading(this.registerBtn, false);
 
       if (error) {
@@ -133,10 +163,28 @@ export const authUI = {
     });
 
     this.logoutBtn?.addEventListener('click', async () => {
-       await authService.signOut();
+      await authService.signOut();
     });
 
     this.loginSpotifyModalBtn?.addEventListener('click', () => this.handleSpotifyLogin());
+
+    this.forgotPasswordForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      this.setLoading(this.btnSubmitForgotPassword, true);
+      
+      const email = this.forgotPasswordEmailInput.value;
+      const { error } = await authService.resetPassword(email);
+      
+      this.setLoading(this.btnSubmitForgotPassword, false);
+      
+      if (error) {
+        alert(`Erro ao solicitar recuperação: ${error}`);
+      } else {
+        alert('Link de recuperação enviado! Verifique seu email.');
+        this.forgotPasswordModal?.classList.add('hidden');
+        this.forgotPasswordForm?.reset();
+      }
+    });
   },
 
   async handleSpotifyLogin() {
@@ -175,9 +223,9 @@ export const authUI = {
   },
 
   showLanding() {
-    if(this.loginView) this.loginView.style.display = 'none';
-    if(this.dashboardView) this.dashboardView.style.display = 'none';
-    if(this.landingView) {
+    if (this.loginView) this.loginView.style.display = 'none';
+    if (this.dashboardView) this.dashboardView.style.display = 'none';
+    if (this.landingView) {
       this.landingView.style.display = 'flex';
       this.landingView.classList.add('flex-col', 'items-center');
       this.landingView.classList.add('animate-crossfade');
@@ -185,21 +233,84 @@ export const authUI = {
   },
 
   showDashboard() {
-    if(this.landingView) this.landingView.style.display = 'none';
-    if(this.loginView) this.loginView.style.display = 'none';
-    if(this.dashboardView) {
+    if (this.landingView) this.landingView.style.display = 'none';
+    if (this.loginView) this.loginView.style.display = 'none';
+    if (this.dashboardView) {
       this.dashboardView.style.display = 'flex';
       this.dashboardView.classList.add('flex-col');
       this.dashboardView.classList.add('animate-crossfade');
     }
   },
 
-  showLogin() {
-    if(this.landingView) this.landingView.style.display = 'none';
-    if(this.dashboardView) this.dashboardView.style.display = 'none';
-    if(this.loginView) {
-      this.loginView.style.display = 'block';
+  async showLogin() {
+    if (this.landingView) this.landingView.style.display = 'none';
+    if (this.dashboardView) this.dashboardView.style.display = 'none';
+    if (this.loginView) {
+      this.loginView.style.display = 'flex';
       this.loginView.classList.add('animate-crossfade');
+
+      const feedContainer = document.getElementById('landing-feed-container');
+      if (feedContainer) {
+        try {
+          const feed = await collectionService.getPublicFeed(3);
+          if (feed && feed.length > 0) {
+            feedContainer.innerHTML = '';
+            feed.forEach(item => {
+              const stars = item.rating ? `${'★'.repeat(Math.floor(item.rating))}${'☆'.repeat(5 - Math.floor(item.rating))}` : '';
+              const card = document.createElement('div');
+              card.className = 'apple-card p-3 bg-white/50 border border-white/20 backdrop-blur-md flex items-center gap-3 shadow-sm';
+              
+              const escapeHTML = (str) => {
+                const div = document.createElement('div');
+                div.innerText = str || '';
+                return div.innerHTML;
+              };
+
+              const img = document.createElement('img');
+              img.src = item.album?.cover_url || '';
+              img.className = 'w-10 h-10 rounded-md object-cover shadow-sm';
+              
+              const contentDiv = document.createElement('div');
+              contentDiv.className = 'flex-1 min-w-0';
+              
+              const topDiv = document.createElement('div');
+              topDiv.className = 'flex justify-between items-center';
+              
+              const usernameP = document.createElement('p');
+              usernameP.className = 'text-[10px] font-bold text-[var(--accent)] truncate';
+              usernameP.textContent = '@' + (item.user?.username || '');
+              
+              const starsDiv = document.createElement('div');
+              starsDiv.className = 'text-[8px] text-yellow-400 tracking-wider';
+              starsDiv.textContent = stars;
+              
+              topDiv.appendChild(usernameP);
+              topDiv.appendChild(starsDiv);
+              
+              const titleP = document.createElement('p');
+              titleP.className = 'text-xs font-bold text-[var(--text-primary)] truncate mt-0.5';
+              titleP.textContent = item.album?.title || '';
+              
+              contentDiv.appendChild(topDiv);
+              contentDiv.appendChild(titleP);
+              
+              if (item.review) {
+                const reviewP = document.createElement('p');
+                reviewP.className = 'text-[10px] text-[var(--text-secondary)] italic truncate mt-0.5';
+                reviewP.textContent = '"' + item.review + '"';
+                contentDiv.appendChild(reviewP);
+              }
+              
+              card.replaceChildren(img, contentDiv);
+              feedContainer.appendChild(card);
+            });
+          } else {
+            feedContainer.innerHTML = '<p class="text-xs text-center text-[var(--text-secondary)]">Nenhuma atividade recente.</p>';
+          }
+        } catch(e) {
+          console.error("Erro ao carregar feed público:", e);
+        }
+      }
     }
   }
 

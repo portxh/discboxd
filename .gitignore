@@ -1,21 +1,34 @@
-# Documentos de Planejamento e Entregas (Local)
-docs/
-roadmap_acs.md
-roteiro_video.md
-entrega_ac1.md
-entrega_ac2.md
-
-# Vídeos e PDFs de Entrega
-*.mp4
-*.pdf
-
-# Logs e Cache
-.DS_Store
+# Dependências
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Configurações de Ambiente
+# Variáveis de Ambiente
 .env
 .env.local
+
+# Arquivos do Sistema Operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de Teste / Debug Temporários
+test_*.js
+debug.js
+scratch/
+
+# Mídias Pesadas
+*.mp4
+*.mov
+*.avi
+*.mkv
+
+# Scripts SQL antigos (mantendo apenas o unificado schema.sql)
+supabase_final.sql
+supabase_fix.sql
+
+# Roteiro
+roteiro_video.md
+roadmap_acs.md
+entrega_ac1.md
+
+# Configurações de IDE Locais
+.vscode/
+.idea/

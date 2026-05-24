@@ -18,7 +18,6 @@ export const spotifyService = {
     try {
       const url = `${API_BASE}/search?q=${encodeURIComponent(query)}&type=album`;
 
-      console.info('[Spotify Search] Buscando:', query);
 
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -87,7 +86,7 @@ export const spotifyService = {
         if (artistGenres.length > 0) genres = artistGenres;
       }
 
-      return {
+      const mappedDetails = {
         spotify_id: album.id,
         title: album.name,
         artist: album.artists.map(a => a.name).join(', '),
@@ -106,7 +105,7 @@ export const spotifyService = {
           artists: t.artists.map(a => a.name).join(', '),
         })),
       };
-      
+
       // Salva no cache antes de retornar
       albumDetailsCache.set(spotifyId, mappedDetails);
       return mappedDetails;

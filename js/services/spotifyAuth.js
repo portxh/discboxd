@@ -3,7 +3,7 @@
 
 const CLIENT_ID = 'dd1aa25dfbf4489390b0b10fbd680bd4';
 const REDIRECT_URI = window.location.origin + window.location.pathname;
-console.info('[Spotify] Redirect URI:', REDIRECT_URI);
+
 const SCOPES = 'user-read-private user-read-currently-playing';
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token';
@@ -27,23 +27,9 @@ function base64urlencode(buf) {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// ============================================================
-// IMPORTANTE: Esta função deve ser chamada ANTES do Supabase
-// para capturar o ?code= do Spotify antes que o Supabase o consuma.
-// ============================================================
-export function extractSpotifyCode() {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const state = params.get('state');
-
-  if (code && state === STATE_KEY) {
-    // Callback detectado: salva o código temporário e limpa a URL para o usuário
-    sessionStorage.setItem('spotify_pending_code', code);
-    window.history.replaceState({}, document.title, window.location.pathname);
-    return true;
-  }
-  return false;
-}
+// A extração do ?code= do Spotify é feita pelo script inline no <head> do
+// index.html, que roda antes de qualquer módulo para evitar que o Supabase
+// consuma o parâmetro. Não duplicar essa lógica aqui.
 
 export const spotifyAuth = {
 
@@ -69,7 +55,7 @@ export const spotifyAuth = {
   },
 
   async handleCallback() {
-    // Pega o code que foi salvo pelo extractSpotifyCode()
+    // Pega o code que foi salvo pelo script inline do index.html
     const code = sessionStorage.getItem('spotify_pending_code');
     if (!code) return false;
 

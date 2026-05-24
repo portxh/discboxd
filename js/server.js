@@ -26,11 +26,35 @@ const mimeTypes = {
 const server = http.createServer((req, res) => {
     console.log(`request starting for ${req.url}`);
 
-    let filePath = path.join(directoryName, req.url === '/' ? 'index.html' : req.url);
-    const extname = String(path.extname(filePath)).toLowerCase();
+    let requestedPath = req.url === '/' ? 'index.html' : req.url;
+    try {
+        requestedPath = decodeURIComponent(requestedPath);
+    } catch (e) {
+        res.writeHead(400);
+        res.end('Bad Request');
+        return;
+    }
+    
+    // Validate path explicitly against traversal attempts before doing any fs operations
+    if (requestedPath.includes('..') || requestedPath.includes('\0')) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
+    }
+    
+    let filePath = path.join(directoryName, requestedPath);
+    const normalizedPath = path.normalize(filePath);
+    
+    if (!normalizedPath.startsWith(directoryName)) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
+    }
+    
+    const extname = String(path.extname(normalizedPath)).toLowerCase();
     const contentType = mimeTypes[extname] || 'application/octet-stream';
 
-    fs.readFile(filePath, (error, content) => {
+    fs.readFile(normalizedPath, (error, content) => {
         if (error) {
             if(error.code == 'ENOENT') {
                 res.writeHead(404, { 'Content-Type': 'text/html' });

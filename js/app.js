@@ -2,17 +2,19 @@ import { authService } from './services/authService.js';
 import { authUI } from './ui/authUI.js';
 import { profileUI } from './ui/profileUI.js';
 import { catalogUI } from './ui/catalogUI.js';
+import { communityUI } from './ui/communityUI.js';
 import { spotifyAuth } from './services/spotifyAuth.js';
 
 // O ?code= do Spotify já foi extraído pelo <script> inline no index.html.
 // Isso evita conflitos com o Supabase Auth.
 
 const App = {
-  
+
   async init() {
     authUI.init();
     profileUI.init();
     catalogUI.init();
+    communityUI.init();
 
     // Troca o código temporário salvo (sessionStorage) por um access_token do Spotify
     await spotifyAuth.handleCallback();
@@ -22,6 +24,18 @@ const App = {
 
     authService.onAuthStateChange((event, session) => {
       this.handleRouting(session);
+      if (event === 'PASSWORD_RECOVERY') {
+        setTimeout(() => {
+          alert('Redefinição de Senha Solicitada. Por favor, digite sua nova senha nas Configurações de Perfil.');
+          const btnProfile = document.getElementById('btn-header-profile');
+          if (btnProfile) btnProfile.click();
+          const passwordEditContainer = document.getElementById('password-edit-container');
+          if (passwordEditContainer && passwordEditContainer.classList.contains('hidden')) {
+            const btnTogglePassword = document.getElementById('btn-toggle-password');
+            if (btnTogglePassword) btnTogglePassword.click();
+          }
+        }, 1000);
+      }
     });
   },
 
@@ -29,7 +43,7 @@ const App = {
     if (session) {
       // Sincronizar perfil (especialmente para login social)
       let profile = await authService.getProfile(session.user.id);
-      
+
       // Se não tem username (usuário novo via OAuth), gera e salva no banco
       if (profile && !profile.username) {
         console.info('[App] Usuário novo via OAuth detectado. Gerando username...');
@@ -43,6 +57,10 @@ const App = {
       catalogUI.updateSpotifyState();
       await catalogUI.loadCollection(session.user.id);
       authUI.showDashboard();
+
+      // Default to Feed de Atividade and load the community feed
+      communityUI.switchTab('community');
+      communityUI.switchCommunityView('following');
     } else {
       authUI.showLanding();
     }
@@ -51,5 +69,5 @@ const App = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-   App.init();
+  App.init();
 });
