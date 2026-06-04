@@ -225,3 +225,84 @@ BEGIN
     END IF;
 END
 $$;
+
+-- =========================================================================
+-- DISCBOXD - UPDATE SCHEMA PARA ADMIN E MODERAÇÃO
+-- =========================================================================
+
+-- 1. Adicionar colunas de controle na tabela profiles
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE;
+
+-- =========================================================================
+-- 2. Atualizar Políticas (RLS) para Administradores
+-- Administradores têm poder para atualizar/deletar qualquer coisa.
+-- =========================================================================
+
+-- Profiles: Admins podem atualizar qualquer perfil (para banir/mudar bio)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins podem atualizar qualquer perfil.') THEN
+      CREATE POLICY "Admins podem atualizar qualquer perfil." ON profiles FOR UPDATE USING ( 
+          (SELECT is_admin FROM profiles WHERE id = auth.uid()) = true 
+      );
+    END IF;
+END
+$$;
+
+-- Collection: Admins podem deletar qualquer colecao (moderação)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins podem deletar qualquer colecao.') THEN
+      CREATE POLICY "Admins podem deletar qualquer colecao." ON collection FOR DELETE USING ( 
+          (SELECT is_admin FROM profiles WHERE id = auth.uid()) = true 
+      );
+    END IF;
+END
+$$;
+
+-- Comments: Admins podem deletar qualquer comentario (moderação)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Admins podem deletar qualquer comentario.') THEN
+      CREATE POLICY "Admins podem deletar qualquer comentario." ON comments FOR DELETE USING ( 
+          (SELECT is_admin FROM profiles WHERE id = auth.uid()) = true 
+      );
+    END IF;
+END
+$$;
+
+-- =========================================================================
+-- 3. Bloqueios para Usuários Banidos
+-- Usuários banidos não podem inserir/atualizar coleções, comentários, etc.
+-- Modificando as políticas de INSERT/UPDATE existentes para checar is_banned
+-- Nota: Supabase pode não suportar "ALTER POLICY", então dropamos e recriamos.
+-- =========================================================================
+
+-- Bloqueio em Collection (INSERT/UPDATE)
+DROP POLICY IF EXISTS "Usuarios podem inserir na sua propria colecao." ON collection;
+CREATE POLICY "Usuarios podem inserir na sua propria colecao." ON collection FOR INSERT WITH CHECK ( 
+    auth.uid() = user_id AND 
+    (SELECT is_banned FROM profiles WHERE id = auth.uid()) = false
+);
+
+DROP POLICY IF EXISTS "Usuarios podem atualizar sua propria colecao." ON collection;
+CREATE POLICY "Usuarios podem atualizar sua propria colecao." ON collection FOR UPDATE USING ( 
+    auth.uid() = user_id AND 
+    (SELECT is_banned FROM profiles WHERE id = auth.uid()) = false
+);
+
+-- Bloqueio em Comments (INSERT)
+DROP POLICY IF EXISTS "Usuarios podem inserir seus comentarios." ON comments;
+CREATE POLICY "Usuarios podem inserir seus comentarios." ON comments FOR INSERT WITH CHECK ( 
+    auth.uid() = user_id AND 
+    (SELECT is_banned FROM profiles WHERE id = auth.uid()) = false
+);
+
+-- Bloqueio em Likes (INSERT)
+DROP POLICY IF EXISTS "Usuarios curtem." ON likes;
+CREATE POLICY "Usuarios curtem." ON likes FOR INSERT WITH CHECK ( 
+    auth.uid() = user_id AND 
+    (SELECT is_banned FROM profiles WHERE id = auth.uid()) = false
+);

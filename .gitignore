@@ -20,14 +20,10 @@ scratch/
 *.avi
 *.mkv
 
-# Scripts SQL antigos (mantendo apenas o unificado schema.sql)
+# Scripts SQL antigos (mantendo apenas o unificado supabase_schema.sql)
 supabase_final.sql
 supabase_fix.sql
-
-# Roteiro
-roteiro_video.md
-roadmap_acs.md
-entrega_ac1.md
+admin_schema_update.sql
 
 # Configurações de IDE Locais
 .vscode/

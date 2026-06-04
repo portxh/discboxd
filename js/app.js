@@ -4,6 +4,7 @@ import { profileUI } from './ui/profileUI.js';
 import { catalogUI } from './ui/catalogUI.js';
 import { communityUI } from './ui/communityUI.js';
 import { spotifyAuth } from './services/spotifyAuth.js';
+import { adminUI } from './ui/adminUI.js';
 
 // O ?code= do Spotify já foi extraído pelo <script> inline no index.html.
 // Isso evita conflitos com o Supabase Auth.
@@ -61,6 +62,9 @@ const App = {
       // Default to Feed de Atividade and load the community feed
       communityUI.switchTab('community');
       communityUI.switchCommunityView('following');
+      
+      // Inicializar Admin Panel
+      await adminUI.init(session);
     } else {
       authUI.showLanding();
     }
