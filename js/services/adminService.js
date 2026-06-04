@@ -58,15 +58,33 @@ export const adminService = {
           review,
           rating,
           added_at,
-          user_id,
-          profiles!inner(username, avatar_url)
+          user_id
         `)
         .not('review', 'is', null)
         .neq('review', '')
         .order('added_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      if (!data || data.length === 0) return [];
+
+      // Busca os profiles manualmente para evitar erro de foreign key
+      const userIds = [...new Set(data.map(item => item.user_id))];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', userIds);
+
+      const profilesMap = {};
+      if (profilesData) {
+        profilesData.forEach(p => {
+          profilesMap[p.id] = p;
+        });
+      }
+
+      return data.map(item => ({
+        ...item,
+        profiles: profilesMap[item.user_id] || { username: 'usuario', avatar_url: '' }
+      }));
     } catch (err) {
       console.error('[AdminService] Erro ao buscar resenhas:', err);
       return [];
