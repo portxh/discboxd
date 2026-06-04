@@ -53,12 +53,11 @@ export const adminService = {
         .from('collection')
         .select(`
           id,
-          album_name,
-          artist_name,
           review,
           rating,
           added_at,
-          user_id
+          user_id,
+          album:albums!inner(title, artist)
         `)
         .not('review', 'is', null)
         .neq('review', '')

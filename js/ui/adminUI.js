@@ -143,6 +143,9 @@ export const adminUI = {
       const avatar = item.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User';
       const username = item.profiles?.username || 'user';
       
+      const albumTitle = item.album?.title || 'Desconhecido';
+      const albumArtist = item.album?.artist || 'Desconhecido';
+      
       tr.innerHTML = `
         <td class="px-4 py-3 whitespace-nowrap">
           <div class="flex items-center gap-2">
@@ -151,8 +154,8 @@ export const adminUI = {
           </div>
         </td>
         <td class="px-4 py-3">
-          <div class="font-semibold text-gray-900 truncate max-w-[150px]" title="${item.album_name}">${item.album_name}</div>
-          <div class="text-xs text-gray-500 truncate max-w-[150px]" title="${item.artist_name}">${item.artist_name}</div>
+          <div class="font-semibold text-gray-900 truncate max-w-[150px]" title="${albumTitle}">${albumTitle}</div>
+          <div class="text-xs text-gray-500 truncate max-w-[150px]" title="${albumArtist}">${albumArtist}</div>
         </td>
         <td class="px-4 py-3 text-gray-600 max-w-[250px] truncate" title="${item.review}">
           "${item.review}"
